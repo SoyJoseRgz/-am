@@ -1,0 +1,136 @@
+import type { FastifyInstance } from 'fastify'
+import { hashPassword, verifyPassword, signAccessToken, signRefreshToken } from '../services/auth.js'
+import * as Usuario from '../models/usuario.js'
+import * as Session from '../models/session.js'
+
+export default async function authRoutes(app: FastifyInstance) {
+  app.post('/api/auth/register', async (request, reply) => {
+    const { celular, password, nombre } = request.body as { celular: string; password: string; nombre: string }
+
+    if (!celular || !password || !nombre) {
+      return reply.status(400).send({ error: 'celular, password y nombre requeridos' })
+    }
+
+    const exists = await Usuario.findByCelular(null, celular)
+    if (exists) {
+      return reply.status(409).send({ error: 'El celular ya está registrado' })
+    }
+
+    const password_hash = await hashPassword(password)
+    const usuario = await Usuario.create({
+      restaurante_id: null,
+      celular,
+      password_hash,
+      nombre,
+      rol: 'comensal',
+    })
+
+    const accessToken = await signAccessToken({ userId: usuario.id, restauranteId: null, rol: usuario.rol })
+    const refreshToken = await signRefreshToken({ userId: usuario.id })
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await Session.create({ usuario_id: usuario.id, refresh_token: refreshToken, expires_at: expiresAt })
+
+    return { accessToken, refreshToken, usuario: { id: usuario.id, nombre: usuario.nombre, celular: usuario.celular, rol: usuario.rol } }
+  })
+
+  app.post('/api/auth/login', async (request, reply) => {
+    const { celular, password, restaurante_id } = request.body as { celular: string; password: string; restaurante_id?: number | null }
+
+    const usuario = await Usuario.findByCelular(restaurante_id, celular)
+    if (!usuario) {
+      return reply.status(401).send({ error: 'Credenciales inválidas' })
+    }
+
+    const valid = await verifyPassword(password, usuario.password_hash)
+    if (!valid) {
+      return reply.status(401).send({ error: 'Credenciales inválidas' })
+    }
+
+    const accessToken = await signAccessToken({ userId: usuario.id, restauranteId: usuario.restaurante_id, rol: usuario.rol })
+    const refreshToken = await signRefreshToken({ userId: usuario.id })
+
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await Session.create({ usuario_id: usuario.id, refresh_token: refreshToken, expires_at: expiresAt })
+
+    return {
+      accessToken,
+      refreshToken,
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        celular: usuario.celular,
+        rol: usuario.rol,
+        force_password_change: usuario.force_password_change,
+      },
+    }
+  })
+
+  app.post('/api/auth/refresh', async (request, reply) => {
+    const { refreshToken } = request.body as { refreshToken: string }
+    if (!refreshToken) {
+      return reply.status(400).send({ error: 'refreshToken requerido' })
+    }
+
+    const session = await Session.findByToken(refreshToken)
+    if (!session) {
+      return reply.status(401).send({ error: 'Refresh token inválido o expirado' })
+    }
+
+    const usuario = await Usuario.findById(session.usuario_id)
+    if (!usuario) {
+      return reply.status(401).send({ error: 'Usuario no encontrado' })
+    }
+
+    const accessToken = await signAccessToken({ userId: usuario.id, restauranteId: usuario.restaurante_id, rol: usuario.rol })
+
+    return { accessToken }
+  })
+
+  app.post('/api/auth/logout', async (request, reply) => {
+    const { refreshToken } = request.body as { refreshToken: string }
+    if (!refreshToken) {
+      return reply.status(400).send({ error: 'refreshToken requerido' })
+    }
+
+    const session = await Session.findByToken(refreshToken)
+    if (session) {
+      await Session.removeByUsuarioId(session.usuario_id)
+    }
+
+    return { success: true }
+  })
+
+  app.post('/api/auth/recover', async (request, reply) => {
+    const { celular } = request.body as { celular: string }
+    if (!celular) {
+      return reply.status(400).send({ error: 'celular requerido' })
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    app.log.info({ celular, otp }, 'OTP generado')
+
+    return { success: true, message: 'OTP enviado (stub)' }
+  })
+
+  app.post('/api/auth/reset-password', async (request, reply) => {
+    const { celular, otp, newPassword } = request.body as { celular: string; otp: string; newPassword: string }
+
+    if (!celular || !otp || !newPassword) {
+      return reply.status(400).send({ error: 'celular, otp y newPassword requeridos' })
+    }
+
+    app.log.info({ celular, otp }, 'OTP validado (stub)')
+
+    const usuario = await Usuario.findByCelular(null, celular)
+    if (!usuario) {
+      return reply.status(404).send({ error: 'Usuario no encontrado' })
+    }
+
+    const password_hash = await hashPassword(newPassword)
+    const { pool } = await import('../db.js')
+    await pool.query('UPDATE usuarios SET password_hash = $1, force_password_change = false WHERE id = $2', [password_hash, usuario.id])
+
+    return { success: true, message: 'Contraseña actualizada' }
+  })
+}
