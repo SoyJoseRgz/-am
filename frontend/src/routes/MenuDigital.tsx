@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
+import { useCart } from '../stores/CartContext'
 import { api } from '../services/api'
 
 interface ModInfo {
@@ -24,6 +25,7 @@ export default function MenuDigital({ restauranteId }: { restauranteId: string }
   const [expanded, setExpanded] = useState<Record<number, boolean>>({})
   const [selMods, setSelMods] = useState<Record<string, number[]>>({})
   const tabsRef = useRef<HTMLDivElement>(null)
+  const { addItem } = useCart()
 
   useEffect(() => {
     api<{ categorias: CategoriaMenu[] }>(`/api/restaurantes/${restauranteId}/menu`)
@@ -58,8 +60,42 @@ export default function MenuDigital({ restauranteId }: { restauranteId: string }
     })
   }
 
+  function handleAdd(p: PlatilloItem) {
+    const modIds: number[] = []
+    const mods: { id: number; nombre: string; precio: number }[] = []
+    for (const g of groupMods(p.modificadores)) {
+      const key = `${p.id}-${g.nombre}`
+      const selected = selMods[key] || []
+      for (const sid of selected) {
+        const opt = g.opciones.find(o => o.id === sid)
+        if (opt) {
+          modIds.push(opt.id)
+          mods.push({ id: opt.id, nombre: opt.nombre, precio: Number(opt.precio) })
+        }
+      }
+    }
+    addItem({
+      platilloId: p.id,
+      nombre: p.nombre,
+      precioUnitario: Number(p.precio),
+      notas: '',
+      modificadores: mods,
+    })
+    toggleExpand(p.id)
+    const toDel: string[] = []
+    for (const g of groupMods(p.modificadores)) {
+      const key = `${p.id}-${g.nombre}`
+      toDel.push(key)
+    }
+    setSelMods(prev => {
+      const copy = { ...prev }
+      for (const k of toDel) delete copy[k]
+      return copy
+    })
+  }
+
   return (
-    <div className="mt-6">
+    <div className="mt-6 pb-20">
       <div className="sticky top-0 z-10 bg-white pb-3 pt-1">
         <input
           className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-2.5 text-sm outline-none focus:border-gray-400"
@@ -98,6 +134,7 @@ export default function MenuDigital({ restauranteId }: { restauranteId: string }
               selMods={selMods}
               onToggle={() => toggleExpand(p.id)}
               onToggleMod={toggleMod}
+              onAdd={() => handleAdd(p)}
             />
           ))}
           {allFiltered.length === 0 && <p className="text-gray-400 col-span-2 text-center py-8">Sin resultados</p>}
@@ -115,6 +152,7 @@ export default function MenuDigital({ restauranteId }: { restauranteId: string }
                     selMods={selMods}
                     onToggle={() => toggleExpand(p.id)}
                     onToggleMod={toggleMod}
+                    onAdd={() => handleAdd(p)}
                   />
                 ))}
               </div>
@@ -131,11 +169,12 @@ export default function MenuDigital({ restauranteId }: { restauranteId: string }
 }
 
 function PlatilloCard({
-  platillo, expanded, selMods, onToggle, onToggleMod,
+  platillo, expanded, selMods, onToggle, onToggleMod, onAdd,
 }: {
   platillo: PlatilloItem; expanded: boolean
   selMods: Record<string, number[]>
   onToggle: () => void; onToggleMod: (pid: number, grupo: string, mid: number, max: number) => void
+  onAdd: () => void
 }) {
   const p = platillo
   const modGroups = groupMods(p.modificadores)
@@ -214,14 +253,11 @@ function PlatilloCard({
           </div>
         )}
 
-        {expanded && !p.agotado && modGroups.length === 0 && (
-          <div className="mt-3 border-t border-gray-200 pt-3">
-            <p className="text-xs text-gray-400">Sin modificadores disponibles</p>
-          </div>
-        )}
-
         {expanded && !p.agotado && (
-          <button className="w-full mt-3 bg-black hover:bg-gray-800 py-2 rounded-md text-sm font-medium transition text-white">
+          <button
+            onClick={onAdd}
+            className="w-full mt-3 bg-black hover:bg-gray-800 py-2 rounded-md text-sm font-medium transition text-white"
+          >
             Agregar — ${p.precio}
           </button>
         )}

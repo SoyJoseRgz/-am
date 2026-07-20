@@ -1,6 +1,8 @@
 import { Routes, Route, Link, Navigate, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Mesa from './routes/Mesa'
+import PrePedido from './routes/PrePedido'
+import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
 import AdminCategorias from './routes/admin/Categorias'
 import AdminPlatillos from './routes/admin/Platillos'
@@ -103,21 +105,6 @@ function redirectPorRol(rol: string) {
   return map[rol] || '/'
 }
 
-function CocinaPlaceholder() {
-  const navigate = useNavigate()
-  return (
-    <div className="min-h-screen bg-white text-black p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Vista Cocina</h1>
-        <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
-      </div>
-      <p className="text-gray-500">Pedidos entrantes aparecerán aquí</p>
-      <p className="text-gray-400 text-sm mt-2">Vista en construcción — ticket 07</p>
-      <Link to="/" className="text-black text-sm mt-4 inline-block border-b border-black">← Volver</Link>
-    </div>
-  )
-}
-
 function SuperPlaceholder() {
   const navigate = useNavigate()
   const [restaurantes, setRestaurantes] = useState<any[]>([])
@@ -150,12 +137,27 @@ function SuperPlaceholder() {
   )
 }
 
+function DashboardPlaceholder() {
+  const navigate = useNavigate()
+  return (
+    <div className="min-h-screen bg-white text-black p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
+      </div>
+      <p className="text-gray-500">Panel del mesero — en construcción (ticket 09)</p>
+      <Link to="/" className="text-black text-sm mt-4 inline-block border-b border-black">← Volver</Link>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/m/:restauranteId/:mesaId" element={<Mesa />} />
+      <Route path="/m/:restauranteId/:mesaId/prepedido" element={<PrePedido />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<Navigate to="/admin/menu" replace />} />
         <Route path="menu" element={<AdminMenu />} />
@@ -164,9 +166,9 @@ export default function App() {
         <Route path="mesas" element={<AdminMesas />} />
         <Route path="staff" element={<AdminStaff />} />
       </Route>
-      <Route path="/cocina" element={<CocinaPlaceholder />} />
+      <Route path="/cocina" element={<Cocina />} />
       <Route path="/super/restaurantes" element={<SuperPlaceholder />} />
-      <Route path="/dashboard" element={<CocinaPlaceholder />} />
+      <Route path="/dashboard" element={<DashboardPlaceholder />} />
     </Routes>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
+import { CartProvider, useCart } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 
 interface MesaData {
@@ -16,7 +17,7 @@ interface Comensal {
   celular: string
 }
 
-export default function Mesa() {
+function MesaInner() {
   const { restauranteId, mesaId } = useParams()
   const navigate = useNavigate()
   const [mesa, setMesa] = useState<MesaData | null>(null)
@@ -27,6 +28,9 @@ export default function Mesa() {
   const [loading, setLoading] = useState(true)
   const [needsCode, setNeedsCode] = useState(false)
   const [joinAttempted, setJoinAttempted] = useState(false)
+  const { items } = useCart()
+
+  const cartCount = items.reduce((s, i) => s + i.cantidad, 0)
 
   const join = useCallback(async (codigo?: string) => {
     const token = localStorage.getItem('accessToken')
@@ -159,8 +163,28 @@ export default function Mesa() {
         </div>
 
         <MenuDigital restauranteId={restauranteId!} />
+
+        {cartCount > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white pointer-events-none">
+            <button
+              onClick={() => navigate(`/m/${restauranteId}/${mesaId}/prepedido`)}
+              className="pointer-events-auto w-full bg-black hover:bg-gray-800 text-white py-3 rounded-md font-semibold flex items-center justify-center gap-2 transition"
+            >
+              <span>Ver pedido</span>
+              <span className="bg-white text-black text-xs font-bold px-2 py-0.5 rounded-full">{cartCount}</span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
+  )
+}
+
+export default function Mesa() {
+  return (
+    <CartProvider>
+      <MesaInner />
+    </CartProvider>
   )
 }
 

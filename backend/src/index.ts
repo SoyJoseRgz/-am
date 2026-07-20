@@ -15,6 +15,7 @@ import superRoutes from './routes/super.js'
 import mesaRoutes from './routes/mesas.js'
 import adminRoutes from './routes/admin.js'
 import menuRoutes from './routes/menu.js'
+import pedidoRoutes, { cocinaRoutes, adminCocinaRoutes } from './routes/pedidos.js'
 import { setupSocketIO } from './sockets/index.js'
 import { seedSuperAdmin } from './seed.js'
 
@@ -44,6 +45,9 @@ app.get('/fotos/:restauranteId/:filename', async (request, reply) => {
 await app.register(authRoutes)
 await app.register(superRoutes)
 await app.register(mesaRoutes)
+await app.register(pedidoRoutes)
+await app.register(cocinaRoutes)
+await app.register(adminCocinaRoutes)
 await app.register(adminRoutes)
 await app.register(menuRoutes)
 

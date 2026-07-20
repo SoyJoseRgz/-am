@@ -14,6 +14,14 @@ export function setupSocketIO(app: FastifyInstance) {
     socket.on('leave:mesa', ({ restauranteId, mesaId }: { restauranteId: number; mesaId: number }) => {
       socket.leave(`room:mesa:${restauranteId}:${mesaId}`)
     })
+
+    socket.on('join:restaurante', (restauranteId: number) => {
+      socket.join(`room:restaurante:${restauranteId}`)
+    })
+
+    socket.on('leave:restaurante', (restauranteId: number) => {
+      socket.leave(`room:restaurante:${restauranteId}`)
+    })
   })
 
   app.decorate('io', io)

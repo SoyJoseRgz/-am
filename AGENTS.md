@@ -196,7 +196,7 @@ Libre 🟢
 | 04 — Auth + Super Admin | ✅ | `routes/auth.ts`, `routes/super.ts`, `plugins/auth.ts`, `seed.ts`, login UI |
 | 05 — QR + Login + Mesa | ✅ | `routes/mesas.ts`, `routes/Mesa.tsx`, login UI |
 | 06 — Menú digital | ✅ | `routes/menu.ts`, `models/menu.ts`, `routes/MenuDigital.tsx` |
-| 07 — Pre-pedido → Cocina | ⬜ | — |
+| 07 — Pre-pedido → Cocina | ✅ | `routes/pedidos.ts`, `models/pedido.ts`, `sockets/index.ts`, `routes/MenuDigital.tsx` (cart), `routes/PrePedido.tsx`, `routes/Cocina.tsx` |
 | 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa}.ts`, `routes/admin/Menu.tsx`, `routes/admin/{Categorias,Platillos,Mesas,Staff}.tsx` |
 | 09 — Mesero panel | ⬜ | — |
 
@@ -204,6 +204,7 @@ Libre 🟢
 - **Fix: logout ausente en vista móvil de Admin** (`AdminLayout.tsx`): el botón "Cerrar sesión" solo existía en el `<aside>` de desktop (`hidden md:flex`), así que en móvil (donde ese sidebar no se renderiza y solo queda el bottom nav de iconos) no había forma de cerrar sesión. Se agregó un `<header>` visible solo en móvil (`md:hidden`) con título + botón de cerrar sesión, igual al patrón ya usado en `CocinaPlaceholder`/`SuperPlaceholder`.
 
 ### Cambios recientes (20/Jul/2026)
+- **Ticket 07 — Pre-pedido → Cocina**: Backend models for pedidos + items + modificadores with transaction. `POST /api/pedidos` creates order, sets mesa to ocupada. `GET /api/cocina/pedidos` lists active orders. `PUT /api/cocina/pedidos/:id/items/:itemId` advances item estado (pendiente→preparando→listo→entregado). Socket.io rooms for real-time updates (`room:restaurante`, `room:mesa`). Frontend: `MenuDigital.tsx` now has cart (+/- items with modifiers), floating cart button in Mesa view. `PrePedido.tsx` shows cart with IVA breakdown, confirms order. `Cocina.tsx` shows live incoming orders with 4-state item progression via clickable dots. `GET /api/restaurantes/:id/menu` now also returns `iva_porcentaje` and `iva_incluido`.
 - **Vista unificada de Menú** (`Menu.tsx`): reemplaza las vistas separadas de Categorías y Platillos en el sidebar. Categorías expandibles, cada una con sus platillos adentro. Barra de acciones (↑, ↓, Editar nombre, ✕ Eliminar) visible al expandir. Cada platillo en dos líneas: nombre + precio + botón Editar negro, secundarios abajo. Search bar filtra por nombre de platillo o categoría.
 - **Bug fixes**: Content-Type en DELETE sin body, duplicate platillo (concat→||), fotos dev server (`/fotos` route + vite proxy + FOTOS_DIR local), filtro `activo=true` en findByRestaurante, editId=-1 en POST platillo, CRUD modificadores (editar inline), foto preview en edición, auto-enter edit mode al crear platillo.
 - **Diseño**: black/white, logout en todas las vistas.
@@ -212,13 +213,14 @@ Libre 🟢
 ### Frontend rutas activas
 - `/` — Landing page (sin selector de rol)
 - `/login` — Login por perfil (redirige según rol)
-- `/m/:restauranteId/:mesaId` — QR + mesa + código invitación + comensales + menú digital
+- `/m/:restauranteId/:mesaId` — QR + mesa + código invitación + comensales + menú digital (con carrito flotante)
+- `/m/:restauranteId/:mesaId/prepedido` — Resumen del carrito + IVA + confirmar pedido
 - `/admin/menu` — Admin: CRUD unificado (categorías + platillos + modificadores + foto + search)
 - `/admin/categorias` — Admin: CRUD categorías (legacy)
 - `/admin/platillos` — Admin: CRUD platillos (legacy)
 - `/admin/mesas` — Admin: CRUD mesas + QR descargable
 - `/admin/staff` — Admin: CRUD staff
-- `/cocina` — Placeholder (ticket 07)
+- `/cocina` — Cocina: pedidos en vivo con estados de item clickeables
 - `/super/restaurantes` — Lista restaurantes (super admin)
 - `/dashboard` — Placeholder mesero (ticket 09)
 
@@ -228,8 +230,12 @@ Libre 🟢
 - `GET /api/mesas/:id?restaurante_id=X` — Info mesa + comensales
 - `POST /api/mesas/:id/join` — Unirse a mesa (requiere auth)
 - `GET /api/mesas/:id/qr` — QR PNG descargable
-- `GET /api/restaurantes/:id/menu` — Menú completo (público)
-- `GET /api/admin/categorias` — CRUD admin
+- `GET /api/restaurantes/:id/menu` — Menú completo (público), incluye `iva_porcentaje` e `iva_incluido`
+- `POST /api/pedidos` — Crear pedido (auth, transaction, marca mesa ocupada)
+- `GET /api/pedidos/mesa/:mesaId` — Pedidos activos de una mesa
+- `GET /api/cocina/pedidos` — Pedidos activos (cocina)
+- `PUT /api/cocina/pedidos/:id/items/:itemId` — Avanzar estado de item
+- `GET|POST|PUT|DELETE /api/admin/categorias[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/platillos[/:id][/duplicate|/foto]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/modificadores[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/mesas[/:id]` — CRUD admin
