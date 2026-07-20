@@ -200,6 +200,9 @@ Libre 🟢
 | 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa}.ts`, `routes/admin/Menu.tsx`, `routes/admin/{Categorias,Platillos,Mesas,Staff}.tsx` |
 | 09 — Mesero panel | ⬜ | — |
 
+### Cambios recientes (20/Jul/2026, deploy)
+- **Fix: logout ausente en vista móvil de Admin** (`AdminLayout.tsx`): el botón "Cerrar sesión" solo existía en el `<aside>` de desktop (`hidden md:flex`), así que en móvil (donde ese sidebar no se renderiza y solo queda el bottom nav de iconos) no había forma de cerrar sesión. Se agregó un `<header>` visible solo en móvil (`md:hidden`) con título + botón de cerrar sesión, igual al patrón ya usado en `CocinaPlaceholder`/`SuperPlaceholder`.
+
 ### Cambios recientes (20/Jul/2026)
 - **Vista unificada de Menú** (`Menu.tsx`): reemplaza las vistas separadas de Categorías y Platillos en el sidebar. Categorías expandibles, cada una con sus platillos adentro. Barra de acciones (↑, ↓, Editar nombre, ✕ Eliminar) visible al expandir. Cada platillo en dos líneas: nombre + precio + botón Editar negro, secundarios abajo. Search bar filtra por nombre de platillo o categoría.
 - **Bug fixes**: Content-Type en DELETE sin body, duplicate platillo (concat→||), fotos dev server (`/fotos` route + vite proxy + FOTOS_DIR local), filtro `activo=true` en findByRestaurante, editId=-1 en POST platillo, CRUD modificadores (editar inline), foto preview en edición, auto-enter edit mode al crear platillo.

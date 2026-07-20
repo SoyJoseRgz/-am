@@ -487,7 +487,7 @@ Se agrega un nuevo perfil: **Super Admin** (tú). Es un panel separado del de lo
 - **Esquinas:** `rounded-md` (4px) — minimales, sin excesos
 - **Inputs:** Fondo gris claro (`bg-gray-50`), borde gris (`border-gray-200`)
 - **Sidebar admin:** Fondo gris claro (`bg-gray-50`), activo en negro
-- **Cerrar sesión visible** en toda vista: esquina superior derecha o sidebar
+- **Cerrar sesión visible** en toda vista: esquina superior derecha o sidebar. En layouts con navegación distinta por breakpoint (ej. Admin: sidebar en desktop, bottom nav en móvil), el botón debe repetirse en un header propio de la vista móvil — no basta con ocultarlo dentro de un bloque `hidden md:flex`
 - **Sin íconos decorativos** — solo funcionales (estados de mesa, emojis de categorías)
 
 ---

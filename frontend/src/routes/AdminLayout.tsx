@@ -33,9 +33,21 @@ export default function AdminLayout() {
         </button>
       </aside>
 
-      <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <h1 className="text-lg font-bold">Admin</h1>
+          <button
+            onClick={() => { localStorage.clear(); navigate('/login') }}
+            className="text-sm text-gray-400 hover:text-black"
+          >
+            Cerrar sesión
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-auto p-4 md:p-6 pb-20 md:pb-6">
+          <Outlet />
+        </main>
+      </div>
 
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-2 z-10">
         {links.map(l => (
