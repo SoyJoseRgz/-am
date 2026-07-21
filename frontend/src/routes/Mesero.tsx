@@ -6,6 +6,7 @@ import { CartProvider } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 import PrePedido from './PrePedido'
 import PedidoActivo from './PedidoActivo'
+import MeseroKanban from './MeseroKanban'
 
 interface MesaInfo {
   id: number; numero: number; estado: string; comensales: number; pedidos_activos: number
@@ -37,6 +38,7 @@ export default function Mesero() {
   const [verPedido, setVerPedido] = useState<MesaInfo | null>(null)
   const [showPre, setShowPre] = useState(false)
   const [showPA, setShowPA] = useState(false)
+  const [kanban, setKanban] = useState(false)
   const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
 
   useEffect(() => {
@@ -89,47 +91,54 @@ export default function Mesero() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold">Mesero</h1>
           <div className="flex gap-2">
-            {llamados.length > 0 && (
+            {llamados.length > 0 && !kanban && (
               <button onClick={() => setSel(null)} className="text-xs bg-red-500 text-white px-3 py-1 rounded-full">
                 {llamados.length} llamado{llamados.length > 1 ? 's' : ''}
               </button>
             )}
+            <button onClick={() => setKanban(!kanban)} className={`text-xs px-3 py-1 rounded-full border ${kanban ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>
+              {kanban ? 'Mesas' : 'Pedidos'}
+            </button>
             <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-xs text-gray-400 hover:text-black">
               Salir
             </button>
           </div>
         </div>
 
-        {llamados.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-3 space-y-2">
-            {llamados.map(l => (
-              <div key={l.id} className="flex items-start justify-between gap-2 text-sm">
-                <div>
-                  <span className="font-semibold">Mesa {l.mesa_numero}</span>
-                  {l.usuario_nombre && <span className="text-gray-500 ml-1">— {l.usuario_nombre}</span>}
-                  <p className="text-gray-600 text-xs mt-0.5">{l.mensaje || l.tipo}</p>
+        {!kanban ? (<>
+          {llamados.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 space-y-2">
+              {llamados.map(l => (
+                <div key={l.id} className="flex items-start justify-between gap-2 text-sm">
+                  <div>
+                    <span className="font-semibold">Mesa {l.mesa_numero}</span>
+                    {l.usuario_nombre && <span className="text-gray-500 ml-1">— {l.usuario_nombre}</span>}
+                    <p className="text-gray-600 text-xs mt-0.5">{l.mensaje || l.tipo}</p>
+                  </div>
+                  <button onClick={() => atenderLlamado(l.id)} className="text-xs bg-black text-white px-2 py-1 rounded-md shrink-0">
+                    Atender
+                  </button>
                 </div>
-                <button onClick={() => atenderLlamado(l.id)} className="text-xs bg-black text-white px-2 py-1 rounded-md shrink-0">
-                  Atender
-                </button>
-              </div>
+              ))}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {mesas.map(m => (
+              <button
+                key={m.id}
+                onClick={() => setSel(m)}
+                className={`border-2 rounded-xl p-4 text-center transition hover:shadow-md ${ESTADO_CLASS[m.estado] || 'border-gray-200'}`}
+              >
+                <p className="text-2xl font-bold">{m.numero}</p>
+                <p className="text-xs mt-1">{ESTADO_LABEL[m.estado] || m.estado}</p>
+                <p className="text-xs mt-1 opacity-60">{m.comensales} comensal{m.comensales !== 1 ? 'es' : ''}</p>
+              </button>
             ))}
           </div>
+        </>) : (
+          <MeseroKanban restauranteId={user.restaurante_id} onClose={() => setKanban(false)} />
         )}
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {mesas.map(m => (
-            <button
-              key={m.id}
-              onClick={() => setSel(m)}
-              className={`border-2 rounded-xl p-4 text-center transition hover:shadow-md ${ESTADO_CLASS[m.estado] || 'border-gray-200'}`}
-            >
-              <p className="text-2xl font-bold">{m.numero}</p>
-              <p className="text-xs mt-1">{ESTADO_LABEL[m.estado] || m.estado}</p>
-              <p className="text-xs mt-1 opacity-60">{m.comensales} comensal{m.comensales !== 1 ? 'es' : ''}</p>
-            </button>
-          ))}
-        </div>
 
         {sel && (
           <div className="fixed inset-0 z-40 bg-black/30" onClick={() => { setSel(null); setUnirId('') }}>

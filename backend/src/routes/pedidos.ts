@@ -43,7 +43,7 @@ export default async function pedidoRoutes(app: FastifyInstance) {
 
 export async function cocinaRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
-  app.addHook('preHandler', app.requireRol('cocina', 'admin', 'super_admin'))
+  app.addHook('preHandler', app.requireRol('cocina', 'mesero', 'admin', 'super_admin'))
 
   app.get('/api/cocina/pedidos', async (request) => {
     const restauranteId = request.user!.restauranteId!
