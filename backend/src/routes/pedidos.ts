@@ -39,6 +39,30 @@ export default async function pedidoRoutes(app: FastifyInstance) {
     }
     return Pedido.findByMesa(mesa.restaurante_id, Number(mesaId))
   })
+
+  app.put('/api/pedidos/:id/items/:itemId/cancelar', async (request, reply) => {
+    const { itemId } = request.params as { itemId: string }
+    const usuarioId = request.user!.userId!
+
+    const item = await Pedido.findByItemId(Number(itemId))
+    if (!item) return reply.status(404).send({ error: 'Item no encontrado' })
+    if (item.usuario_id !== usuarioId) {
+      return reply.status(403).send({ error: 'No puedes cancelar items de otro comensal' })
+    }
+    if (item.estado !== 'pendiente') {
+      return reply.status(400).send({ error: 'Solo puedes cancelar items en estado pendiente' })
+    }
+
+    await Pedido.updateItemEstado(Number(itemId), 'cancelado', 'Cancelado por comensal')
+
+    app.io.to(`room:mesa:${item.restaurante_id}:${item.mesa_id}`).emit('item:actualizado', {
+      itemId: Number(itemId), estado: 'cancelado',
+    })
+    app.io.to(`room:restaurante:${item.restaurante_id}`).emit('item:actualizado', {
+      itemId: Number(itemId), estado: 'cancelado',
+    })
+    return { success: true }
+  })
 }
 
 export async function cocinaRoutes(app: FastifyInstance) {

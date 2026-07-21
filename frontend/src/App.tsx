@@ -1,10 +1,11 @@
-import { Routes, Route, Link, Navigate, useSearchParams, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import Mesa from './routes/Mesa'
 import PrePedido from './routes/PrePedido'
 import PedidoActivo from './routes/PedidoActivo'
 import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
+import AdminDashboard from './routes/admin/Dashboard'
 import AdminMenu from './routes/admin/Menu'
 import AdminMesas from './routes/admin/Mesas'
 import AdminStaff from './routes/admin/Staff'
@@ -185,7 +186,7 @@ export default function App() {
       <Route path="/m/:restauranteId/:mesaId/prepedido" element={<CartProvider><PrePedido /></CartProvider>} />
       <Route path="/m/:restauranteId/:mesaId/pedido" element={<PedidoActivo />} />
       <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="/admin/menu" replace />} />
+        <Route index element={<AdminDashboard />} />
         <Route path="menu" element={<AdminMenu />} />
         <Route path="mesas" element={<AdminMesas />} />
         <Route path="pedidos" element={<AdminPedidos />} />

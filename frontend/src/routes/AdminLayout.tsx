@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 
 const links = [
+  { to: '/admin', label: 'Dashboard', icon: '📊' },
   { to: '/admin/menu', label: 'Menú', icon: '📋' },
   { to: '/admin/mesas', label: 'Mesas', icon: '🪑' },
   { to: '/admin/pedidos', label: 'Pedidos', icon: '🧾' },

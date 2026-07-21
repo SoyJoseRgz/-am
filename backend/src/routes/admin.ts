@@ -150,6 +150,11 @@ export default async function adminRoutes(app: FastifyInstance) {
     return { success: true }
   })
 
+  // ── Dashboard ──
+  app.get('/api/admin/dashboard', async (request) => {
+    return Pedido.getDashboardStats(request.user!.restauranteId!)
+  })
+
   // ── Pedidos ──
   app.get('/api/admin/pedidos', async (request) => {
     return Pedido.findForAdmin(request.user!.restauranteId!)

@@ -57,6 +57,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const navigate = useNavigate()
   const [pedidos, setPedidos] = useState<PedidoData[]>([])
   const [loading, setLoading] = useState(true)
+  const [cancelandoId, setCancelandoId] = useState<number | null>(null)
 
   function cargar() {
     if (!mesaId || !restauranteId) return
@@ -86,6 +87,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     }
   }, [mesaId, restauranteId])
 
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+
   const itemsDelDia = pedidos.flatMap(p => p.items)
 
   const agrupados = ESTADOS.reduce((acc, est) => {
@@ -96,6 +99,14 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const todosEntregados = itemsDelDia.length > 0 && itemsDelDia.every(i => i.estado === 'entregado')
   const [cuentaEnviando, setCuentaEnviando] = useState(false)
   const [cuentaEnviada, setCuentaEnviada] = useState(false)
+
+  async function cancelarItem(item: ItemData) {
+    setCancelandoId(item.id)
+    try {
+      await api(`/api/pedidos/${item.pedido_id}/items/${item.id}/cancelar`, { method: 'PUT' })
+    } catch {}
+    setCancelandoId(null)
+  }
 
   async function pedirCuenta() {
     setCuentaEnviando(true)
@@ -161,9 +172,20 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                               <p className="text-gray-400 text-xs italic mt-0.5">📝 {item.notas}</p>
                             )}
                           </div>
-                          <span className={`text-xs font-medium shrink-0 ${estadoColor[est]}`}>
-                            {estadoLabel[est]}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {item.estado === 'pendiente' && item.usuario_id === user.id && (
+                              <button
+                                onClick={() => cancelarItem(item)}
+                                disabled={cancelandoId === item.id}
+                                className="text-xs text-red-400 hover:text-red-600 disabled:text-gray-300"
+                              >
+                                {cancelandoId === item.id ? '...' : 'Cancelar'}
+                              </button>
+                            )}
+                            <span className={`text-xs font-medium ${estadoColor[est]}`}>
+                              {estadoLabel[est]}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}

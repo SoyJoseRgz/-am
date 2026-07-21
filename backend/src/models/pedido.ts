@@ -194,6 +194,41 @@ export async function findForAdmin(restauranteId: number) {
   return pedidos
 }
 
+export async function getDashboardStats(restauranteId: number) {
+  const pedidos = await pool.query(
+    `SELECT COUNT(*)::int AS total FROM pedidos WHERE restaurante_id = $1`,
+    [restauranteId],
+  )
+  const items = await pool.query(
+    `SELECT
+       COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE estado = 'pendiente')::int AS pendiente,
+       COUNT(*) FILTER (WHERE estado = 'preparando')::int AS preparando,
+       COUNT(*) FILTER (WHERE estado = 'listo')::int AS listo,
+       COUNT(*) FILTER (WHERE estado = 'entregado')::int AS entregado,
+       COUNT(*) FILTER (WHERE estado = 'cancelado')::int AS cancelado
+     FROM pedido_items pi
+     JOIN pedidos p ON p.id = pi.pedido_id
+     WHERE p.restaurante_id = $1`,
+    [restauranteId],
+  )
+  const mesas = await pool.query(
+    `SELECT
+       COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE estado = 'libre')::int AS libre,
+       COUNT(*) FILTER (WHERE estado = 'ocupada')::int AS ocupada,
+       COUNT(*) FILTER (WHERE estado = 'unida')::int AS unida,
+       COUNT(*) FILTER (WHERE estado = 'limpiando')::int AS limpiando
+     FROM mesas WHERE restaurante_id = $1`,
+    [restauranteId],
+  )
+  return {
+    pedidos: pedidos.rows[0],
+    items: items.rows[0],
+    mesas: mesas.rows[0],
+  }
+}
+
 export async function findByItemId(itemId: number) {
   const r = await pool.query(
     `SELECT pi.*, p.restaurante_id, p.mesa_id

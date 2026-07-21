@@ -143,13 +143,14 @@ Tres tipos de rooms:
 - Mesero NO puede modificar precios ni aplicar descuentos
 
 ### Estados de item en pedido
-Pendiente (🟡) → Preparando (🔵) → Listo (🟢) → Entregado (⚫)
+Pendiente (🟡) → Preparando (🔵) → Listo (🟢) → Entregado (⚫) → Cancelado (🔴)
 
 Cada item se marca individualmente (no todo el pedido junto).
 
 ### Cancelación de items
-- Comensal: solo sus propios items, solo en estado Pendiente
-- Mesero: cualquier item de la mesa, solo en estado Pendiente
+- Cocina: cualquier item en Pendiente, con motivo obligatorio. Se guarda en `notas` como `CANCELADO: {motivo}`
+- Comensal: solo sus propios items, solo en estado Pendiente (no implementado aún)
+- Mesero: cualquier item de la mesa, solo en estado Pendiente (no implementado aún)
 
 ### Máquina de estados de mesa
 ```
@@ -195,19 +196,28 @@ Libre 🟢
 
 Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. UI nueva? → web-design-guidelines. Bug raro? → diagnose.
 
-## Estado actual (21/Jul/2026)
+## Estado actual (22/Jul/2026)
 
 | Ticket | Estado | Archivos clave |
 |--------|--------|---------------|
-| 01 — Project scaffold | ✅ | `frontend/`, `backend/`, `shared/`, configs |
+| 01 — Project scaffold | ✅ | `frontend/`, `backend/`, configs |
 | 02 — Docker + infra | ✅ | `docker-compose.yml`, `Dockerfile`s, `nginx/`, `Makefile` |
-| 03 — DB migrations | ✅ | 13 migraciones en `backend/migrations/` |
+| 03 — DB migrations | ✅ | 14 migraciones en `backend/migrations/` |
 | 04 — Auth + Super Admin | ✅ | `routes/auth.ts`, `routes/super.ts`, `plugins/auth.ts`, `seed.ts`, login UI |
 | 05 — QR + Login + Mesa | ✅ | `routes/mesas.ts`, `routes/Mesa.tsx`, login UI |
 | 06 — Menú digital | ✅ | `routes/menu.ts`, `models/menu.ts`, `routes/MenuDigital.tsx` |
 | 07 — Pre-pedido → Cocina | ✅ | `routes/pedidos.ts`, `models/pedido.ts`, `sockets/index.ts`, `routes/MenuDigital.tsx`, `routes/PrePedido.tsx`, `routes/Cocina.tsx` |
-| 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa}.ts`, `routes/admin/Menu.tsx`, `routes/admin/{Mesas,Staff}.tsx` |
+| 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa,pedido}.ts`, `routes/admin/{Menu,Mesas,Staff,Pedidos}.tsx` |
 | 09 — Mesero panel | ✅ | `routes/mesero.ts`, `routes/Mesero.tsx`, `services/socket.ts` |
+
+### Cambios recientes (22/Jul/2026)
+- **Cancelación de items en Cocina** (`Cocina.tsx`, `routes/pedidos.ts`, `models/pedido.ts`): botón "Cancelar (falta ingrediente)" en bottom sheet → textarea motivo → PUT con `estado='cancelado'`. Items cancelados se tachan en rojo. Sección "Cancelados" movida a vista Admin. Timer (`ItemTimer`) muestra minutos desde creación junto al número de mesa.
+- **Admin Pedidos** (`routes/admin/Pedidos.tsx`, `routes/admin.ts`, `models/pedido.ts`): nueva vista `/admin/pedidos`. 4 cards de stats (pedidos totales, items activos, completados, cancelados). Lista de pedidos con items coloreados por estado. Cancelados visibles dentro de `<details>` expandible.
+- **Force password change para admin** (`models/usuario.ts`): `force_password_change` ahora default `true` cuando `rol='admin'`. Endpoint `reset-password` acepta `restaurante_id` para buscar usuario correcto.
+- **Fix socket race** (`services/socket.ts`): `connectToRestaurante`/`connectToMesa` emiten `join` dentro de `socket.once('connect')` en vez de buffer, evitando pérdida del evento en React strict mode.
+- **Fix SQL type inference** (`models/pedido.ts`): `CONCAT(..., $3)` → `|| $3` para que PostgreSQL infiera correctamente el tipo text de `$3`.
+- **Migration 014** (`migrations/014-cancelado-estado.ts`): agrega valor `'cancelado'` al enum `estado_item_enum`.
+- **Dead code cleanup**: eliminados `shared/` y `database/` directorios, `zustand`, `ioredis`, `zod` de package.json, `@shared` alias de vite.config, exports no usados (`apiUrl`, `leaveMesa`, `refreshToken`, `ModSeleccionado`, `CartItem`).
 
 ### Cambios recientes (21/Jul/2026)
 - **Ticket 09 — Mesero panel**: Backend `routes/mesero.ts` con `GET /api/mesero/mesas`, `PUT .../estado`, unir/separar. Frontend `routes/Mesero.tsx` con semáforo de mesas coloreadas por estado, detalle en bottom sheet con acciones (ocupar, cobrar→limpiando, unir, separar, marcar libre), y sección de llamados activos con botón "Atender". Socket en vivo para cambios de estado y llamados. Ruta `/dashboard`.
@@ -236,6 +246,7 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - `/m/:restauranteId/:mesaId/pedido` — Pedido activo (fallback directo)
 - `/admin/menu` — Admin: CRUD unificado (categorías + platillos + modificadores + foto + search)
 - `/admin/mesas` — Admin: CRUD mesas + QR descargable
+- `/admin/pedidos` — Admin: historial de pedidos + stats + items cancelados
 - `/admin/staff` — Admin: CRUD staff
 - `/cocina` — Cocina: pedidos en vivo con estados de item clickeables
 - `/super/restaurantes` — Super Admin: crear restaurantes + lista
@@ -260,6 +271,7 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - `GET|POST|PUT|DELETE /api/admin/modificadores[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/mesas[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/staff[/:id]` — CRUD admin
+- `GET /api/admin/pedidos` — Historial de pedidos para admin
 - `GET /super/restaurantes` — protegido (solo super_admin)
 - `POST /super/restaurantes` — protegido, crea restaurante + admin
 
