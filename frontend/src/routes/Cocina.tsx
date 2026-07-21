@@ -5,7 +5,7 @@ import { connectToRestaurante, socket } from '../services/socket'
 
 interface ModInfo { id: number; nombre: string; precio: string }
 interface ItemInfo {
-  id: number; platillo_id: number; nombre: string
+  id: number; pedido_id: number; platillo_id: number; nombre: string
   cantidad: number; precio_unitario: string
   estado: string; notas: string | null
   modificadores: ModInfo[]
@@ -38,14 +38,19 @@ export default function Cocina() {
     cargar()
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     const restauranteId = user.restaurante_id
-    if (restauranteId) connectToRestaurante(restauranteId)
+    if (restauranteId) {
+      connectToRestaurante(restauranteId)
+    }
     const onConnect = () => { if (restauranteId) socket.emit('join:restaurante', restauranteId) }
+    const onConnectError = (err: Error) => console.error('[Cocina] Socket connect error:', err.message)
     socket.on('connect', onConnect)
+    socket.on('connect_error', onConnectError)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
     return () => {
       socket.off('connect', onConnect)
+      socket.off('connect_error', onConnectError)
       socket.off('pedido:nuevo', h); socket.off('item:actualizado', h)
       if (restauranteId) socket.emit('leave:restaurante', restauranteId)
     }
@@ -54,7 +59,7 @@ export default function Cocina() {
   async function setEstado(item: ItemInfo & { mesa_numero: number }, estado: string) {
     setSelItem(null)
     if (item.estado === estado) return
-    try { await api(`/api/cocina/pedidos/0/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado }) }) } catch {}
+    try { await api(`/api/cocina/pedidos/${item.pedido_id}/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado }) }) } catch {}
   }
 
   const activos = pedidos.filter(p => p.items.some(i => i.estado !== 'entregado'))

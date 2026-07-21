@@ -1,12 +1,12 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
 
-export interface ModSeleccionado {
+interface ModSeleccionado {
   id: number
   nombre: string
   precio: number
 }
 
-export interface CartItem {
+interface CartItem {
   platilloId: number
   nombre: string
   cantidad: number

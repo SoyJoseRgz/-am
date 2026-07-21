@@ -18,14 +18,12 @@
     "dotenv": "^16.4.0",
     "fastify": "^5.2.0",
     "fastify-plugin": "^6.0.0",
-    "ioredis": "^5.4.0",
     "jose": "^5.9.0",
     "node-pg-migrate": "^7.0.0",
     "pg": "^8.13.0",
     "qrcode": "^1.5.4",
     "sharp": "^0.35.3",
-    "socket.io": "^4.8.0",
-    "zod": "^3.24.0"
+    "socket.io": "^4.8.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

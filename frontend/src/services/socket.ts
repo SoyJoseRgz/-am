@@ -3,17 +3,23 @@ import { io } from 'socket.io-client'
 const socket = io('/', { autoConnect: false })
 
 export function connectToMesa(restauranteId: number, mesaId: number) {
-  if (!socket.connected) socket.connect()
-  socket.emit('join:mesa', { restauranteId, mesaId })
+  const doJoin = () => socket.emit('join:mesa', { restauranteId, mesaId })
+  if (socket.connected) {
+    doJoin()
+  } else {
+    socket.once('connect', doJoin)
+    if (!socket.connected) socket.connect()
+  }
 }
 
 export function connectToRestaurante(restauranteId: number) {
-  if (!socket.connected) socket.connect()
-  socket.emit('join:restaurante', restauranteId)
-}
-
-export function leaveMesa(restauranteId: number, mesaId: number) {
-  socket.emit('leave:mesa', { restauranteId, mesaId })
+  const doJoin = () => socket.emit('join:restaurante', restauranteId)
+  if (socket.connected) {
+    doJoin()
+  } else {
+    socket.once('connect', doJoin)
+    if (!socket.connected) socket.connect()
+  }
 }
 
 export { socket }

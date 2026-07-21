@@ -34,7 +34,7 @@ async function doFetch<T>(path: string, options: RequestInit, isRetry = false): 
   return res.json() as Promise<T>
 }
 
-export async function refreshToken(): Promise<boolean> {
+async function refreshToken(): Promise<boolean> {
   if (refreshing) return refreshing
 
   refreshing = (async () => {
@@ -64,7 +64,4 @@ export async function refreshToken(): Promise<boolean> {
   finally { refreshing = null }
 }
 
-export function apiUrl(path: string) {
-  const token = localStorage.getItem('accessToken')
-  return `${BASE}${path}${path.includes('?') ? '&' : '?'}token=${token}`
-}
+
