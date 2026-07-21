@@ -238,8 +238,8 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - `/admin/mesas` — Admin: CRUD mesas + QR descargable
 - `/admin/staff` — Admin: CRUD staff
 - `/cocina` — Cocina: pedidos en vivo con estados de item clickeables
-- `/super/restaurantes` — Lista restaurantes (super admin)
-- `/dashboard` — Placeholder mesero (ticket 09)
+- `/super/restaurantes` — Super Admin: crear restaurantes + lista
+- `/dashboard` — Mesero: semáforo de mesas + llamados + tomar pedido
 
 ### Backend endpoints activos
 - `POST /api/auth/register` / `login` / `refresh` / `logout` / `recover` / `reset-password`

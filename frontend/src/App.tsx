@@ -1,5 +1,5 @@
 import { Routes, Route, Link, Navigate, useSearchParams, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Mesa from './routes/Mesa'
 import PrePedido from './routes/PrePedido'
 import PedidoActivo from './routes/PedidoActivo'
@@ -9,6 +9,7 @@ import AdminMenu from './routes/admin/Menu'
 import AdminMesas from './routes/admin/Mesas'
 import AdminStaff from './routes/admin/Staff'
 import Mesero from './routes/Mesero'
+import Super from './routes/Super'
 import { CartProvider } from './stores/CartContext'
 import QRScanner from './components/QRScanner'
 
@@ -168,38 +169,6 @@ function redirectPorRol(rol: string) {
   return map[rol] || '/'
 }
 
-function SuperPlaceholder() {
-  const navigate = useNavigate()
-  const [restaurantes, setRestaurantes] = useState<any[]>([])
-
-  useEffect(() => {
-    const token = localStorage.getItem('accessToken')
-    if (!token) return
-    fetch('/super/restaurantes', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
-      .then(d => setRestaurantes(d.restaurantes || []))
-  }, [])
-
-  return (
-    <div className="min-h-screen bg-white text-black p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Super Admin</h1>
-        <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
-      </div>
-      <p className="text-gray-500 mb-4">Restaurantes registrados: {restaurantes.length}</p>
-      <ul className="space-y-2">
-        {restaurantes.map((r: any) => (
-          <li key={r.id} className="bg-white border border-gray-200 rounded-md p-3 flex justify-between">
-            <span>{r.nombre}</span>
-            <span className="text-gray-400">{r.activo ? 'Activo' : 'Inactivo'}</span>
-          </li>
-        ))}
-      </ul>
-      <Link to="/" className="text-black text-sm mt-4 inline-block border-b border-black">← Volver</Link>
-    </div>
-  )
-}
-
 export default function App() {
   return (
     <Routes>
@@ -215,7 +184,7 @@ export default function App() {
         <Route path="staff" element={<AdminStaff />} />
       </Route>
       <Route path="/cocina" element={<Cocina />} />
-      <Route path="/super/restaurantes" element={<SuperPlaceholder />} />
+      <Route path="/super/restaurantes" element={<Super />} />
       <Route path="/dashboard" element={<Mesero />} />
     </Routes>
   )
