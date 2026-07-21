@@ -8,6 +8,7 @@ import AdminLayout from './routes/AdminLayout'
 import AdminMenu from './routes/admin/Menu'
 import AdminMesas from './routes/admin/Mesas'
 import AdminStaff from './routes/admin/Staff'
+import AdminPedidos from './routes/admin/Pedidos'
 import Mesero from './routes/Mesero'
 import Super from './routes/Super'
 import ForcePasswordChange from './routes/ForcePasswordChange'
@@ -187,6 +188,7 @@ export default function App() {
         <Route index element={<Navigate to="/admin/menu" replace />} />
         <Route path="menu" element={<AdminMenu />} />
         <Route path="mesas" element={<AdminMesas />} />
+        <Route path="pedidos" element={<AdminPedidos />} />
         <Route path="staff" element={<AdminStaff />} />
       </Route>
       <Route path="/cocina" element={<Cocina />} />

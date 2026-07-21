@@ -157,6 +157,43 @@ export async function updateItemEstado(itemId: number, estado: string, motivo?: 
   return r.rows[0] || null
 }
 
+export async function findForAdmin(restauranteId: number) {
+  const r = await pool.query<PedidoCompleto>(
+    `SELECT p.*, u.nombre AS comensal_nombre, me.numero AS mesa_numero
+     FROM pedidos p
+     LEFT JOIN usuarios u ON u.id = p.usuario_id
+     JOIN mesas me ON me.id = p.mesa_id
+     WHERE p.restaurante_id = $1
+     ORDER BY p.created_at DESC
+     LIMIT 100`,
+    [restauranteId],
+  )
+  const pedidos = r.rows
+  for (const ped of pedidos) {
+    const items = await pool.query(
+      `SELECT pi.*, pl.nombre, u.nombre AS comensal_nombre
+       FROM pedido_items pi
+       JOIN platillos pl ON pl.id = pi.platillo_id
+       LEFT JOIN usuarios u ON u.id = pi.usuario_id
+       WHERE pi.pedido_id = $1
+       ORDER BY pi.id`,
+      [ped.id],
+    )
+    ped.items = items.rows
+    for (const item of ped.items) {
+      const mods = await pool.query(
+        `SELECT pm.id, m.nombre_opcion AS nombre, m.precio
+         FROM pedido_item_modificadores pm
+         JOIN modificadores m ON m.id = pm.modificador_id
+         WHERE pm.pedido_item_id = $1`,
+        [item.id],
+      )
+      ;(item as any).modificadores = mods.rows
+    }
+  }
+  return pedidos
+}
+
 export async function findByItemId(itemId: number) {
   const r = await pool.query(
     `SELECT pi.*, p.restaurante_id, p.mesa_id

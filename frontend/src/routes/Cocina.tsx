@@ -72,7 +72,6 @@ export default function Cocina() {
 
   const activos = pedidos.filter(p => p.items.some(i => i.estado !== 'entregado' && i.estado !== 'cancelado'))
   const completados = pedidos.filter(p => p.items.every(i => i.estado === 'entregado'))
-  const cancelados = pedidos.flatMap(p => p.items.map(i => ({ ...i, mesa_numero: p.mesa_numero }))).filter(i => i.estado === 'cancelado')
 
   const agrupados = ESTADOS.reduce((acc, est) => {
     acc[est] = pedidos.flatMap(p => p.items.map(i => ({ ...i, mesa_numero: p.mesa_numero }))).filter(i => i.estado === est)
@@ -233,18 +232,7 @@ export default function Cocina() {
         </div>
       )}
 
-      {cancelados.length > 0 && (
-        <div className="max-w-5xl mx-auto px-4 pb-4">
-          <h2 className="text-sm font-semibold text-red-400 mb-2">Cancelados ({cancelados.length})</h2>
-          <div className="flex flex-wrap gap-2">
-            {cancelados.map(i => (
-              <span key={i.id} className="text-xs text-red-400 bg-red-50 px-2 py-1 rounded-md line-through">
-                Mesa {i.mesa_numero}: {i.nombre}{i.notas ? ' — ' + i.notas.replace('CANCELADO: ', '') : ''}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* cancelados solo visibles en admin/pedidos */}
     </div>
   )
 }

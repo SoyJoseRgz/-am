@@ -17,7 +17,7 @@ export default function ForcePasswordChange() {
     try {
       await api('/api/auth/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ celular: user.celular, otp: '000000', newPassword }),
+        body: JSON.stringify({ celular: user.celular, otp: '000000', newPassword, restaurante_id: user.restaurante_id }),
       })
       localStorage.setItem('user', JSON.stringify({ ...user, force_password_change: false }))
       const destino = user.rol === 'admin' ? '/admin' : user.rol === 'mesero' ? '/dashboard' : '/cocina'

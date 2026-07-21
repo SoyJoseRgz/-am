@@ -115,7 +115,7 @@ export default async function authRoutes(app: FastifyInstance) {
   })
 
   app.post('/api/auth/reset-password', async (request, reply) => {
-    const { celular, otp, newPassword } = request.body as { celular: string; otp: string; newPassword: string }
+    const { celular, otp, newPassword, restaurante_id } = request.body as { celular: string; otp: string; newPassword: string; restaurante_id?: number | null }
 
     if (!celular || !otp || !newPassword) {
       return reply.status(400).send({ error: 'celular, otp y newPassword requeridos' })
@@ -123,7 +123,7 @@ export default async function authRoutes(app: FastifyInstance) {
 
     app.log.info({ celular, otp }, 'OTP validado (stub)')
 
-    const usuario = await Usuario.findByCelular(null, celular)
+    const usuario = await Usuario.findByCelular(restaurante_id ?? null, celular)
     if (!usuario) {
       return reply.status(404).send({ error: 'Usuario no encontrado' })
     }

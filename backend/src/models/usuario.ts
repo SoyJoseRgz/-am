@@ -39,7 +39,7 @@ export async function create(data: {
   const r = await pool.query<Usuario>(
     `INSERT INTO usuarios (restaurante_id, celular, password_hash, nombre, rol, force_password_change)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [data.restaurante_id, data.celular, data.password_hash, data.nombre, data.rol, data.force_password_change ?? false],
+    [data.restaurante_id, data.celular, data.password_hash, data.nombre, data.rol, data.force_password_change ?? (data.rol === 'admin')],
   )
   return r.rows[0]
 }

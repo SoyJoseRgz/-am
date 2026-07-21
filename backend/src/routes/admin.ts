@@ -8,6 +8,7 @@ import * as Platillo from '../models/platillo.js'
 import * as Modificador from '../models/modificador.js'
 import * as Mesa from '../models/mesa.js'
 import * as Staff from '../models/staff.js'
+import * as Pedido from '../models/pedido.js'
 import { hashPassword } from '../services/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -147,6 +148,11 @@ export default async function adminRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string }
     await Mesa.remove(Number(id))
     return { success: true }
+  })
+
+  // ── Pedidos ──
+  app.get('/api/admin/pedidos', async (request) => {
+    return Pedido.findForAdmin(request.user!.restauranteId!)
   })
 
   // ── Staff ──
