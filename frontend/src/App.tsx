@@ -10,6 +10,7 @@ import AdminMesas from './routes/admin/Mesas'
 import AdminStaff from './routes/admin/Staff'
 import Mesero from './routes/Mesero'
 import Super from './routes/Super'
+import ForcePasswordChange from './routes/ForcePasswordChange'
 import { CartProvider } from './stores/CartContext'
 import QRScanner from './components/QRScanner'
 
@@ -77,6 +78,11 @@ function Login() {
       localStorage.setItem('accessToken', data.accessToken)
       localStorage.setItem('refreshToken', data.refreshToken)
       localStorage.setItem('user', JSON.stringify(data.usuario))
+
+      if (data.usuario.force_password_change) {
+        navigate('/cambiar-contrasena', { replace: true })
+        return
+      }
 
       if (redirect) {
         window.location.href = redirect
@@ -186,6 +192,7 @@ export default function App() {
       <Route path="/cocina" element={<Cocina />} />
       <Route path="/super/restaurantes" element={<Super />} />
       <Route path="/dashboard" element={<Mesero />} />
+      <Route path="/cambiar-contrasena" element={<ForcePasswordChange />} />
     </Routes>
   )
 }

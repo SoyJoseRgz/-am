@@ -19,14 +19,21 @@ export async function findByRestaurante(restauranteId: number) {
 }
 
 export async function create(data: {
-  restaurante_id: number; nombre: string; celular: string; password_hash: string; rol: string
+  restaurante_id: number; nombre: string; celular: string; password_hash: string; rol: string; force_password_change?: boolean
 }) {
-  const r = await pool.query<Staff>(
-    `INSERT INTO usuarios (restaurante_id, nombre, celular, password_hash, rol)
-     VALUES ($1,$2,$3,$4,$5) RETURNING id, restaurante_id, nombre, celular, rol, created_at`,
-    [data.restaurante_id, data.nombre, data.celular, data.password_hash, data.rol],
-  )
-  return r.rows[0]
+  try {
+    const r = await pool.query<Staff>(
+      `INSERT INTO usuarios (restaurante_id, nombre, celular, password_hash, rol, force_password_change)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, restaurante_id, nombre, celular, rol, created_at`,
+      [data.restaurante_id, data.nombre, data.celular, data.password_hash, data.rol, data.force_password_change ?? true],
+    )
+    return r.rows[0]
+  } catch (e: any) {
+    if (e.code === '23505') {
+      throw new Error('El celular ya está registrado para este restaurante')
+    }
+    throw e
+  }
 }
 
 export async function update(id: number, data: { nombre?: string; rol?: string }) {

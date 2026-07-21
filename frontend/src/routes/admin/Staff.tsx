@@ -34,7 +34,7 @@ export default function AdminStaff() {
       }
       reset(); load()
     } catch (e: any) {
-      console.error('Error al guardar staff', e)
+      setMsg(e.message || 'Error al guardar')
     }
   }
 
@@ -53,7 +53,7 @@ export default function AdminStaff() {
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">Staff</h2>
-      {msg && <p className="text-green-700 mb-2 text-sm">{msg}</p>}
+      {msg && <p className={`mb-2 text-sm ${msg.includes('Error') || msg.includes('registrado') ? 'text-red-600' : 'text-green-700'}`}>{msg}</p>}
 
       <div className="bg-white border border-gray-200 rounded-md p-4 space-y-3 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

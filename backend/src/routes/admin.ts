@@ -154,10 +154,20 @@ export default async function adminRoutes(app: FastifyInstance) {
     return Staff.findByRestaurante(request.user!.restauranteId!)
   })
 
-  app.post('/api/admin/staff', async (request) => {
+  app.post('/api/admin/staff', async (request, reply) => {
     const { nombre, celular, password, rol } = request.body as any
-    const password_hash = await hashPassword(password)
-    return Staff.create({ restaurante_id: request.user!.restauranteId!, nombre, celular, password_hash, rol })
+    if (!nombre || !celular || !password || !rol) {
+      return reply.status(400).send({ error: 'Todos los campos son requeridos' })
+    }
+    try {
+      const password_hash = await hashPassword(password)
+      return await Staff.create({ restaurante_id: request.user!.restauranteId!, nombre, celular, password_hash, rol })
+    } catch (e: any) {
+      if (e.message?.includes('ya está registrado')) {
+        return reply.status(409).send({ error: e.message })
+      }
+      throw e
+    }
   })
 
   app.put('/api/admin/staff/:id', async (request, reply) => {

@@ -5,6 +5,7 @@ import { connectToRestaurante, socket } from '../services/socket'
 import { CartProvider } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 import PrePedido from './PrePedido'
+import PedidoActivo from './PedidoActivo'
 
 interface MesaInfo {
   id: number; numero: number; estado: string; comensales: number; pedidos_activos: number
@@ -33,6 +34,7 @@ export default function Mesero() {
   const [sel, setSel] = useState<MesaInfo | null>(null)
   const [unirId, setUnirId] = useState('')
   const [tomarPedido, setTomarPedido] = useState<MesaInfo | null>(null)
+  const [verPedido, setVerPedido] = useState<MesaInfo | null>(null)
   const [showPre, setShowPre] = useState(false)
   const [showPA, setShowPA] = useState(false)
   const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
@@ -148,6 +150,11 @@ export default function Mesero() {
               )}
               {sel.estado === 'ocupada' && (
                 <div className="space-y-2">
+                  {sel.pedidos_activos > 0 && (
+                    <button onClick={() => { setVerPedido(sel); setSel(null) }} className="w-full border border-black text-black py-2 rounded-md text-sm">
+                      Ver pedido ({sel.pedidos_activos})
+                    </button>
+                  )}
                   <button onClick={() => { setTomarPedido(sel); setSel(null) }} className="w-full bg-black text-white py-2 rounded-md text-sm">
                     Tomar pedido
                   </button>
@@ -172,6 +179,20 @@ export default function Mesero() {
               )}
               <button onClick={() => { setSel(null); setUnirId('') }} className="w-full text-gray-400 text-sm py-2">Cerrar</button>
             </div>
+          </div>
+        )}
+
+        {verPedido && (
+          <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
+              <span className="font-bold text-lg">Mesa {verPedido.numero} — Pedido</span>
+              <button onClick={() => setVerPedido(null)} className="text-gray-400 hover:text-black text-xl">✕</button>
+            </div>
+            <PedidoActivo
+              restauranteId={String(user.restaurante_id)}
+              mesaId={String(verPedido.id)}
+              onClose={() => setVerPedido(null)}
+            />
           </div>
         )}
 
