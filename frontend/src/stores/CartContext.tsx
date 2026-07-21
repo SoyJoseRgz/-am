@@ -35,24 +35,24 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null)
 
-function storageKey() {
+function storageKey(suffix?: string) {
   const uid = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').id } catch { return 0 } })()
-  return `cart_items_${uid}`
+  return suffix ? `cart_${suffix}` : `cart_items_${uid}`
 }
 
-function loadCart(): CartItem[] {
+function loadCart(suffix?: string): CartItem[] {
   try {
-    const raw = localStorage.getItem(storageKey())
+    const raw = localStorage.getItem(storageKey(suffix))
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(loadCart)
+export function CartProvider({ children, cartKey }: { children: ReactNode; cartKey?: string }) {
+  const [items, setItems] = useState<CartItem[]>(() => loadCart(cartKey))
 
   useEffect(() => {
-    localStorage.setItem(storageKey(), JSON.stringify(items))
-  }, [items])
+    localStorage.setItem(storageKey(cartKey), JSON.stringify(items))
+  }, [items, cartKey])
 
   const addItem = useCallback((item: Omit<CartItem, 'cantidad'>) => {
     setItems(prev => {

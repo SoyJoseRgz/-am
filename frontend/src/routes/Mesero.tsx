@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
 import { connectToRestaurante, socket } from '../services/socket'
+import { CartProvider } from '../stores/CartContext'
+import MenuDigital from './MenuDigital'
+import PrePedido from './PrePedido'
 
 interface MesaInfo {
   id: number; numero: number; estado: string; comensales: number; pedidos_activos: number
@@ -29,6 +32,9 @@ export default function Mesero() {
   const [llamados, setLlamados] = useState<Llamado[]>([])
   const [sel, setSel] = useState<MesaInfo | null>(null)
   const [unirId, setUnirId] = useState('')
+  const [tomarPedido, setTomarPedido] = useState<MesaInfo | null>(null)
+  const [showPre, setShowPre] = useState(false)
+  const [showPA, setShowPA] = useState(false)
   const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
 
   useEffect(() => {
@@ -142,7 +148,10 @@ export default function Mesero() {
               )}
               {sel.estado === 'ocupada' && (
                 <div className="space-y-2">
-                  <button onClick={() => cambiarEstado(sel.id, 'limpiando')} className="w-full bg-black text-white py-2 rounded-md text-sm">
+                  <button onClick={() => { setTomarPedido(sel); setSel(null) }} className="w-full bg-black text-white py-2 rounded-md text-sm">
+                    Tomar pedido
+                  </button>
+                  <button onClick={() => cambiarEstado(sel.id, 'limpiando')} className="w-full border border-black text-black py-2 rounded-md text-sm">
                     Cobrar y cerrar cuenta
                   </button>
                   <div className="flex gap-2 items-center">
@@ -163,6 +172,40 @@ export default function Mesero() {
               )}
               <button onClick={() => { setSel(null); setUnirId('') }} className="w-full text-gray-400 text-sm py-2">Cerrar</button>
             </div>
+          </div>
+        )}
+
+        {tomarPedido && (
+          <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+            <CartProvider cartKey={`mesero-${tomarPedido.id}`}>
+              <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
+                <span className="font-bold text-lg">Mesa {tomarPedido.numero} — Tomar pedido</span>
+                <button onClick={() => { setTomarPedido(null); setShowPre(false); setShowPA(false) }} className="text-gray-400 hover:text-black text-xl">✕</button>
+              </div>
+              {showPA ? (
+                <div className="p-4 text-center space-y-4 py-12">
+                  <p className="text-green-600 font-semibold">✓ Pedido enviado a cocina</p>
+                  <button onClick={() => { setTomarPedido(null); setShowPre(false); setShowPA(false) }} className="bg-black text-white px-6 py-2 rounded-md text-sm">
+                    Cerrar
+                  </button>
+                </div>
+              ) : showPre ? (
+                <PrePedido
+                  restauranteId={String(user.restaurante_id)}
+                  mesaId={String(tomarPedido.id)}
+                  onClose={() => setShowPre(false)}
+                  onSuccess={() => { setShowPre(false); setShowPA(true) }}
+                />
+              ) : (
+                <MenuDigital
+                  restauranteId={String(user.restaurante_id)}
+                  usuarioId={user.id || 0}
+                  usuarioNombre={user.nombre || 'Mesero'}
+                  onClose={() => setTomarPedido(null)}
+                  onCartClick={() => setShowPre(true)}
+                />
+              )}
+            </CartProvider>
           </div>
         )}
       </div>
