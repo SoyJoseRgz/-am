@@ -38,7 +38,7 @@ export default async function superRoutes(app: FastifyInstance) {
     return r
   })
 
-  app.delete<{ Params: { id: string } }>('/api/super/restaurantes/:id', async (request, reply) => {
+  app.delete<{ Params: { id: string } }>('/api/super/restaurantes/:id', async (request) => {
     const id = parseInt(request.params.id)
     await Restaurante.remove(id)
     return { success: true }
