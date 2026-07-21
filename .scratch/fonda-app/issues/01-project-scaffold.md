@@ -4,12 +4,19 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Estado real:** completado (6/7)
+**Gaps conocidos:** `shared/types/` y `shared/schemas/` están vacíos — los tipos se definen inline en frontend y backend.
 
-- [ ] `npm run dev` starts both frontend (Vite) and backend (tsx watch) concurrently
-- [ ] Frontend `npm run build` passes `tsc --noEmit`
-- [ ] Backend starts and responds `200 OK` on `GET /health`
+- [x] `npm run dev` starts both frontend (Vite) and backend (tsx watch) concurrently
+- [x] Frontend `npm run build` passes `tsc --noEmit`
+- [x] Backend starts and responds `200 OK` on `GET /health`
 - [ ] Shared types (`@shared/types`) importable from both frontend and backend
-- [ ] PWA manifest + service worker generated on build
-- [ ] TailwindCSS compiles and applies utility classes
-- [ ] `.env.example` checked in, `.env` gitignored
+- [x] PWA manifest + service worker generated on build
+- [x] TailwindCSS compiles and applies utility classes
+- [x] `.env.example` checked in, `.env` gitignored
+
+**Notas:**
+- `@shared` path alias configurado en frontend y backend
+- `shared/constants/index.ts` tiene enums (ROLES, ESTADOS_MESA, ESTADOS_ITEM)
+- `shared/types/` y `shared/schemas/` existen pero sin archivos .ts
+- Backend models definen interfaces inline propias

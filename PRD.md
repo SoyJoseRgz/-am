@@ -191,12 +191,12 @@ No aplica. Tiempo de preparación base manual configurado por el admin. Sin mach
 ### Pantallas del MVP por Rol
 
 **Comensal:**
-1. `/login` — Login/Registro con celular + contraseña
-2. `/mesa/{id}/unirse` — Muestra código de invitación (si eres primero) o input para unirte
-3. `/mesa/{id}/menu` — Menú con categorías, platillos, fotos, modificadores
-4. `/mesa/{id}/pre-pedido` — Resumen del carrito antes de confirmar
-5. `/mesa/{id}/pedido` — Pedido activo con estado de cada item en tiempo real
-6. `/mesa/{id}/llamar` — Botones flotantes (cuenta, mesero, servilletas)
+1. `/` — Landing page con botón "Escanear QR" (cámara trasera) + login/mesa demo
+2. `/login` — Login/Registro toggle con celular + contraseña (nombre opcional, default "Comensal")
+3. `/m/{restauranteId}/{mesaId}` — Mesa + código de invitación (siempre visible) + lista de comensales + botones "Ver menú" y "Ver mi pedido" (si hay pedido activo)
+4. `/m/{restauranteId}/{mesaId}/prepedido` — Pre-pedido agrupado por comensal con IVA + controles +/−. Cada quien edita solo sus items. Al confirmar → redirige a pedido activo
+5. `/m/{restauranteId}/{mesaId}/pedido` — Pedido activo: items agrupados por estado (pendiente/preparando/listo/entregado) con nombre del comensal. Updates en tiempo real vía socket. Botón "Sumar más"
+6. `/m/{restauranteId}/{mesaId}/llamar` — Botones flotantes (cuenta, mesero, servilletas)
 
 **Mesero:**
 1. `/login` — Login + selector de rol (si tiene varios roles)
@@ -337,16 +337,16 @@ RESTAURANTE
 ### Flujos Clave
 
 #### Flujo A: Comensal escanea QR, login, se une a la mesa, pre-pedido y confirmación
-1. Comensal 1 escanea QR de Mesa 5 (QR fijo, contiene `restaurante_id + mesa_id`)
-2. PWA carga el login desde cache local (< 1s)
-3. Ingresa celular + contraseña. Primera vez: registro (celular + crear contraseña). JWT token devuelto
+1. Comensal 1 escanea QR de Mesa 5 (QR fijo, contiene `restaurante_id + mesa_id`). Puede escanear con la cámara nativa de su teléfono o con el botón "Escanear QR" de la app (abre cámara trasera, parsea la URL y navega a la mesa)
+2. PWA carga el login desde cache local (< 1s). Si ya tiene sesión, va directo a la mesa
+3. Login con celular + contraseña, o **registro** con solo celular + contraseña (nombre opcional, default "Comensal"). Toggle en misma página. JWT devuelto
 4. El backend verifica si la mesa ya tiene sesión activa:
    - No → Crea sesión, genera **código de invitación de 4 dígitos**, muestra código
    - Sí → Pide código de invitación para unirse
 5. Comensales 2, 3... escanean el mismo QR, hacen login, ingresan el código de invitación → se unen a la mesa
-6. Cada comensal navega el menú (cargado con stale-while-revalidate post-login), agrega items a su carrito individual
-7. Cada uno ve su **pre-pedido**: resumen con items, cantidades, subtotal
-8. Cada uno confirma su pre-pedido → va directo a cocina como "Pendiente"
+6. Cada comensal presiona **"Ver menú"** (botón en la vista de mesa) que abre el menú en pantalla completa con botón ← Volver. Cada platillo tiene control `+` / `−/qty/+` si ya está en carrito. Sin modificadores: agrega directo. Con modificadores: expande selector + "Agregar". Cada quien agrega items a su **carrito individual** (etiquetado con su usuarioId/usuarioNombre). El menú se carga con stale-while-revalidate. El carrito flotante "Ver pedido" está disponible dentro del menú fullscreen
+7. Al entrar al **pre-pedido**, los items se muestran **agrupados por comensal** (ej: "Lalo: 2 tacos, Luis: 3 cafés") con subtotal, IVA y total. Cada quien solo puede editar/eliminar sus propios items
+8. Al confirmar, redirige automáticamente a **PedidoActivo** (`/m/{id}/{mesa}/pedido`) donde los items se ven agrupados por estado: Pendiente 🟡 → Preparando 🔵 → Listo 🟢 → Entregado ⚫. Updates en vivo vía socket. Un botón "Sumar más" permite volver al menú para agregar más items
 9. Cocina ve los items agrupados por mesa (solo número de mesa) en pantalla digital. Alerta sonora al recibir
 10. Cocina confirma recepción → items pasan a "En proceso" → notificación push + sonido a cada comensal
 11. Cocina marca items individualmente como "Entregado" → notificación + sonido

@@ -30,7 +30,7 @@ export async function create(data: {
   restaurante_id: number
   mesa_id: number
   usuario_id: number
-  items: { platillo_id: number; cantidad: number; precio_unitario: number; notas?: string; modificador_ids?: number[] }[]
+  items: { platillo_id: number; cantidad: number; precio_unitario: number; notas?: string; modificador_ids?: number[]; usuario_id?: number }[]
 }) {
   const client = await pool.connect()
   try {
@@ -42,10 +42,11 @@ export async function create(data: {
     const pedido = r.rows[0]
 
     for (const item of data.items) {
+      const itemUsuarioId = item.usuario_id ?? data.usuario_id
       const ir = await client.query<PedidoItem>(
         `INSERT INTO pedido_items (pedido_id, platillo_id, usuario_id, cantidad, precio_unitario, notas)
          VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-        [pedido.id, item.platillo_id, data.usuario_id, item.cantidad, item.precio_unitario, item.notas || null],
+        [pedido.id, item.platillo_id, itemUsuarioId, item.cantidad, item.precio_unitario, item.notas || null],
       )
       const pedidoItem = ir.rows[0]
 
@@ -82,9 +83,10 @@ export async function findByMesa(restauranteId: number, mesaId: number) {
   const pedidos = r.rows
   for (const ped of pedidos) {
     const items = await pool.query(
-      `SELECT pi.*, pl.nombre
+      `SELECT pi.*, pl.nombre, u.nombre AS comensal_nombre
        FROM pedido_items pi
        JOIN platillos pl ON pl.id = pi.platillo_id
+       LEFT JOIN usuarios u ON u.id = pi.usuario_id
        WHERE pi.pedido_id = $1
        ORDER BY pi.id`,
       [ped.id],
@@ -117,9 +119,10 @@ export async function findActivos(restauranteId: number) {
   const pedidos = r.rows
   for (const ped of pedidos) {
     const items = await pool.query(
-      `SELECT pi.*, pl.nombre
+      `SELECT pi.*, pl.nombre, u.nombre AS comensal_nombre
        FROM pedido_items pi
        JOIN platillos pl ON pl.id = pi.platillo_id
+       LEFT JOIN usuarios u ON u.id = pi.usuario_id
        WHERE pi.pedido_id = $1
        ORDER BY pi.id`,
       [ped.id],

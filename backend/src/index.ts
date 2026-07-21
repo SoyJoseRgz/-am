@@ -18,6 +18,8 @@ import menuRoutes from './routes/menu.js'
 import pedidoRoutes, { cocinaRoutes, adminCocinaRoutes } from './routes/pedidos.js'
 import { setupSocketIO } from './sockets/index.js'
 import { seedSuperAdmin } from './seed.js'
+import llamadosRoutes from './routes/llamados.js'
+import meseroRoutes from './routes/mesero.js'
 
 const app = Fastify({ logger: true })
 
@@ -50,6 +52,8 @@ await app.register(cocinaRoutes)
 await app.register(adminCocinaRoutes)
 await app.register(adminRoutes)
 await app.register(menuRoutes)
+await app.register(llamadosRoutes)
+await app.register(meseroRoutes)
 
 setupSocketIO(app)
 

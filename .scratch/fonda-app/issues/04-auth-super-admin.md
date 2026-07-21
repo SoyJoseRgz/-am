@@ -4,15 +4,24 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Estado real:** completado con gap (9.5/10)
+**Gaps conocidos:** Frontend no verifica `force_password_change` tras login — no hay página de cambio de contraseña.
 
-- [ ] `POST /api/auth/register` creates user with celular + password
-- [ ] `POST /api/auth/login` returns `{ accessToken, refreshToken }`
-- [ ] `POST /api/auth/refresh` returns new access token
-- [ ] `POST /api/auth/recover` sends OTP (stubbed, logs to console)
-- [ ] `POST /api/auth/reset-password` validates OTP, updates password
-- [ ] Protected middleware rejects requests without valid JWT
-- [ ] Super Admin can `POST /super/restaurantes` — creates restaurant + admin user
-- [ ] Super Admin can `GET /super/restaurantes` — lists all
+- [x] `POST /api/auth/register` creates user with celular + password
+- [x] `POST /api/auth/login` returns `{ accessToken, refreshToken }`
+- [x] `POST /api/auth/refresh` returns new access token
+- [x] `POST /api/auth/recover` sends OTP (stubbed, logs to console)
+- [x] `POST /api/auth/reset-password` validates OTP, updates password
+- [x] Protected middleware rejects requests without valid JWT
+- [x] Super Admin can `POST /super/restaurantes` — creates restaurant + admin user
+- [x] Super Admin can `GET /super/restaurantes` — lists all
 - [ ] First admin login redirects to change-password page
-- [ ] Refresh tokens are invalidated on logout
+- [x] Refresh tokens are invalidated on logout
+
+**Notas:**
+- Backend completo: `backend/src/routes/auth.ts` (register, login, refresh, logout, recover, reset-password)
+- Auth plugin: `backend/src/plugins/auth.ts` (JWT verify, role guard)
+- Super admin routes: `backend/src/routes/super.ts`
+- Seed: `backend/src/seed.ts` — crea super_admin `2299288981`
+- Gap: login response incluye `force_password_change` pero frontend `App.tsx` Login no lo procesa
+- JWT con jose (no jsonwebtoken), bcrypt salt rounds 10

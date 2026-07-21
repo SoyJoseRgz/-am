@@ -4,7 +4,7 @@
 
 **Blocked by:** 07, 08
 
-**Status:** ready-for-agent
+**Estado real:** no iniciado (0/10)
 
 - [ ] Mesero logs in and selects "Mesero" role
 - [ ] Semáforo shows all mesas with status colors and real-time updates
@@ -16,3 +16,10 @@
 - [ ] Mesero acknowledges notification (dismisses)
 - [ ] Mesa status transitions: Ocupada → Unida → Limpiando → Libre (via mesero)
 - [ ] Role switch from same login screen (no re-auth needed for role change)
+
+**Notas:**
+- Ruta `/dashboard` existe pero solo renderiza `DashboardPlaceholder` ("Panel del mesero — en construcción (ticket 09)")
+- Login mapea rol `mesero` → `/dashboard` pero sin selector multi-rol
+- Backend tiene `Mesa.setEstado()` y tabla `llamados` en migraciones, pero sin endpoints ni frontend
+- La migración `010-llamados.ts` define la tabla pero no hay API para crear/recibir llamados
+- Es el siguiente ticket a implementar

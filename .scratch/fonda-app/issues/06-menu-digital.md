@@ -4,13 +4,24 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Estado real:** completado con gap (7.5/8)
+**Gaps conocidos:** Sin blur placeholder/skeleton en carga de fotos. Sin badges dietarios (vegano, sin gluten).
 
-- [ ] Categories scrollable horizontally, active one highlighted
-- [ ] Platillos shown in grid with photo, name, price, badges
+- [x] Categories scrollable horizontally, active one highlighted
+- [x] Platillos shown in grid with photo, name, price, badges
 - [ ] Photos lazy-load with blur placeholder
-- [ ] Modifiers expandable: radio for single, checkbox for multi
-- [ ] Modifier price shown inline, added to total display
-- [ ] Search bar filters all platillos across categories
-- [ ] API returns nested data: categorias → platillos → modificadores
-- [ ] Images from `/fotos/{restaurante_id}/{platillo_id}.webp`
+- [x] Modifiers expandable: radio for single, checkbox for multi
+- [x] Modifier price shown inline, added to total display
+- [x] Search bar filters all platillos across categories
+- [x] API returns nested data: categorias → platillos → modificadores
+- [x] Images from `/fotos/{restaurante_id}/{platillo_id}.webp`
+
+**Notas:**
+- Componente: `frontend/src/routes/MenuDigital.tsx`
+- Categorías horizontales con scroll snap, activa en bg-black
+- Grid responsive 1 col móvil / 2 cols tablet
+- Modificadores: radio si `max_seleccion===1`, checkbox si multi
+- Search bar filtra por nombre/descripción, muestra flat list si hay query
+- API: `GET /api/restaurantes/:id/menu` retorna `{ categorias, iva_porcentaje, iva_incluido }`
+- Fotos servidas via `/fotos/` (backend static route + Nginx + Vite proxy)
+- Gap menor: `loading="lazy"` sí, pero sin blur placeholder

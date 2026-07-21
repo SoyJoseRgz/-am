@@ -55,3 +55,11 @@ export async function validarCodigo(mesaId: number, codigo: string) {
   )
   return r.rows[0] || null
 }
+
+export async function findCodigoByMesa(mesaId: number) {
+  const r = await pool.query<{ codigo_invitacion: string }>(
+    'SELECT codigo_invitacion FROM mesa_usuarios WHERE mesa_id = $1 AND activo = true LIMIT 1',
+    [mesaId],
+  )
+  return r.rows[0]?.codigo_invitacion || null
+}

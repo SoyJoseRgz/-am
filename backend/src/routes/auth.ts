@@ -5,10 +5,10 @@ import * as Session from '../models/session.js'
 
 export default async function authRoutes(app: FastifyInstance) {
   app.post('/api/auth/register', async (request, reply) => {
-    const { celular, password, nombre } = request.body as { celular: string; password: string; nombre: string }
+    const { celular, password, nombre } = request.body as { celular: string; password: string; nombre?: string }
 
-    if (!celular || !password || !nombre) {
-      return reply.status(400).send({ error: 'celular, password y nombre requeridos' })
+    if (!celular || !password) {
+      return reply.status(400).send({ error: 'celular y password requeridos' })
     }
 
     const exists = await Usuario.findByCelular(null, celular)
@@ -21,7 +21,7 @@ export default async function authRoutes(app: FastifyInstance) {
       restaurante_id: null,
       celular,
       password_hash,
-      nombre,
+      nombre: nombre || 'Comensal',
       rol: 'comensal',
     })
 

@@ -14,13 +14,23 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Estado real:** completado con gap (7.5/8)
+**Gaps conocidos:** Notificaciones inconsistentes entre CRUDs. Reorden con flechas ↑↓ en vez de drag-and-drop.
 
-- [ ] Categorías: list, create, edit, delete, reorder by drag
-- [ ] Platillos: list with search, create, edit, soft-delete, duplicate
-- [ ] Photo upload validates size/type, converts to WebP, stores at `/var/www/fotos/{restaurante_id}/{platillo_id}.webp`
-- [ ] Modificadores: list per platillo, create, edit, delete
-- [ ] Mesas: list with status chip, create, edit, delete, QR download
-- [ ] Staff: list, create, edit, delete, role assignment
+- [x] Categorías: list, create, edit, delete, reorder by drag
+- [x] Platillos: list with search, create, edit, soft-delete, duplicate
+- [x] Photo upload validates size/type, converts to WebP, stores at `/var/www/fotos/{restaurante_id}/{platillo_id}.webp`
+- [x] Modificadores: list per platillo, create, edit, delete
+- [x] Mesas: list with status chip, create, edit, delete, QR download
+- [x] Staff: list, create, edit, delete, role assignment
 - [ ] All CRUDs show notifications on success/error
-- [ ] Responsive layout (sidebar on desktop, bottom nav on mobile)
+- [x] Responsive layout (sidebar on desktop, bottom nav on mobile)
+
+**Notas:**
+- Vista unificada: `frontend/src/routes/admin/Menu.tsx` — categorías expandibles con platillos inline
+- Vistas legacy: `Categorias.tsx`, `Platillos.tsx`, `Mesas.tsx`, `Staff.tsx`
+- Backend admin: `backend/src/routes/admin.ts` — CRUD completo
+- Fotos: validación 5MB, jpg/png, sharp convierte a WebP 1200px/quality 85
+- Layout responsive: `AdminLayout.tsx` — sidebar md+, bottom nav móvil + header con logout
+- Gap: `Mesas.tsx` sin notificaciones (errores a console), `Platillos.tsx` sin success msgs
+- Reorden: flechas ↑↓ en vez de HTML5 drag-and-drop (API `PATCH /reorder` sí existe)

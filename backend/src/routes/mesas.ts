@@ -18,8 +18,9 @@ export default async function mesaRoutes(app: FastifyInstance) {
     }
 
     const comensales = await MesaUsuario.findByMesa(mesa.id)
+    const codigo_invitacion = await MesaUsuario.findCodigoByMesa(mesa.id)
 
-    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, comensales }
+    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, comensales, codigo_invitacion }
   })
 
   app.post('/api/mesas/:id/join', { preHandler: [app.authenticate] }, async (request, reply) => {
@@ -72,7 +73,7 @@ export default async function mesaRoutes(app: FastifyInstance) {
 
     app.io.to(`room:mesa:${restaurante_id}:${mesaId}`).emit('comensal:unido', { usuarioId })
 
-    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, primero: false }
+    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, codigo_invitacion: codigo, primero: false }
   })
 
   app.get('/api/mesas/:id/qr', async (request, reply) => {

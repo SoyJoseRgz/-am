@@ -13,6 +13,14 @@ export interface CartItem {
   precioUnitario: number
   notas: string
   modificadores: ModSeleccionado[]
+  usuarioId: number
+  usuarioNombre: string
+}
+
+interface ItemsPorComensal {
+  usuarioId: number
+  usuarioNombre: string
+  items: CartItem[]
 }
 
 interface CartContextType {
@@ -22,16 +30,19 @@ interface CartContextType {
   updateCantidad: (index: number, delta: number) => void
   clearCart: () => void
   totalSinIVA: number
-  totalConIVA: number
+  itemsPorComensal: ItemsPorComensal[]
 }
 
 const CartContext = createContext<CartContextType | null>(null)
 
-const STORAGE_KEY = 'cart_items'
+function storageKey() {
+  const uid = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').id } catch { return 0 } })()
+  return `cart_items_${uid}`
+}
 
 function loadCart(): CartItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(storageKey())
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
@@ -40,7 +51,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(loadCart)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+    localStorage.setItem(storageKey(), JSON.stringify(items))
   }, [items])
 
   const addItem = useCallback((item: Omit<CartItem, 'cantidad'>) => {
@@ -48,6 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const idx = prev.findIndex(i =>
         i.platilloId === item.platilloId &&
         i.notas === item.notas &&
+        i.usuarioId === item.usuarioId &&
         JSON.stringify(i.modificadores) === JSON.stringify(item.modificadores)
       )
       if (idx >= 0) {
@@ -83,10 +95,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return sum + base + mods
   }, 0)
 
-  const totalConIVA = totalSinIVA
+  const porComensal = items.reduce<ItemsPorComensal[]>((acc, item) => {
+    const grupo = acc.find(g => g.usuarioId === item.usuarioId)
+    if (grupo) {
+      grupo.items.push(item)
+    } else {
+      acc.push({ usuarioId: item.usuarioId, usuarioNombre: item.usuarioNombre, items: [item] })
+    }
+    return acc
+  }, [])
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateCantidad, clearCart, totalSinIVA, totalConIVA }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateCantidad, clearCart, totalSinIVA, itemsPorComensal: porComensal }}>
       {children}
     </CartContext.Provider>
   )

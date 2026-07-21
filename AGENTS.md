@@ -186,19 +186,37 @@ Libre 🟢
 - **Bordes finos** en cards (`.border.border-gray-200`), esquinas `.rounded-md`
 - **Cerrar sesión** visible en todas las vistas (esquina superior derecha o sidebar)
 
-## Estado actual (20/Jul/2026)
+## Workflow de desarrollo
+
+- **`ponytail` (full)** — Siempre activo por defecto. Antes de escribir cualquier código, aplicar la ladder: YAGNI → ya existe en el codebase → stdlib → nativo → dependencia instalada → una línea → mínimo código. El código más vago que funciona es el correcto. Bug fix = root cause, no symptom.
+- **`grill-me` antes de diseñar** — Si un requerimiento no está claro, hay tradeoffs que decidir, o falta diseño → invocar `grill-me` primero para refinar el plan. No código sin diseño claro.
+- **`web-design-guidelines` después de implementar UI** — Toda UI nueva se revisa contra accesibilidad, UX, responsive y diseño visual antes de darla por terminada.
+- **`diagnose` para bugs duros** — Bugs intermitentes, de performance, o cuya causa raíz no es obvia → usar diagnose.
+
+Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. UI nueva? → web-design-guidelines. Bug raro? → diagnose.
+
+## Estado actual (21/Jul/2026)
 
 | Ticket | Estado | Archivos clave |
 |--------|--------|---------------|
 | 01 — Project scaffold | ✅ | `frontend/`, `backend/`, `shared/`, configs |
 | 02 — Docker + infra | ✅ | `docker-compose.yml`, `Dockerfile`s, `nginx/`, `Makefile` |
-| 03 — DB migrations | ✅ | 12 migraciones en `backend/migrations/` |
+| 03 — DB migrations | ✅ | 13 migraciones en `backend/migrations/` |
 | 04 — Auth + Super Admin | ✅ | `routes/auth.ts`, `routes/super.ts`, `plugins/auth.ts`, `seed.ts`, login UI |
 | 05 — QR + Login + Mesa | ✅ | `routes/mesas.ts`, `routes/Mesa.tsx`, login UI |
 | 06 — Menú digital | ✅ | `routes/menu.ts`, `models/menu.ts`, `routes/MenuDigital.tsx` |
-| 07 — Pre-pedido → Cocina | ✅ | `routes/pedidos.ts`, `models/pedido.ts`, `sockets/index.ts`, `routes/MenuDigital.tsx` (cart), `routes/PrePedido.tsx`, `routes/Cocina.tsx` |
-| 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa}.ts`, `routes/admin/Menu.tsx`, `routes/admin/{Categorias,Platillos,Mesas,Staff}.tsx` |
-| 09 — Mesero panel | ⬜ | — |
+| 07 — Pre-pedido → Cocina | ✅ | `routes/pedidos.ts`, `models/pedido.ts`, `sockets/index.ts`, `routes/MenuDigital.tsx`, `routes/PrePedido.tsx`, `routes/Cocina.tsx` |
+| 08 — Admin panel | ✅ | `routes/admin.ts`, `models/{categoria,platillo,modificador,staff,mesa}.ts`, `routes/admin/Menu.tsx`, `routes/admin/{Mesas,Staff}.tsx` |
+| 09 — Mesero panel | ✅ | `routes/mesero.ts`, `routes/Mesero.tsx`, `services/socket.ts` |
+
+### Cambios recientes (21/Jul/2026)
+- **Ticket 09 — Mesero panel**: Backend `routes/mesero.ts` con `GET /api/mesero/mesas`, `PUT .../estado`, unir/separar. Frontend `routes/Mesero.tsx` con semáforo de mesas coloreadas por estado, detalle en bottom sheet con acciones (ocupar, cobrar→limpiando, unir, separar, marcar libre), y sección de llamados activos con botón "Atender". Socket en vivo para cambios de estado y llamados. Ruta `/dashboard`. Seed: mesero demo `2291111111 / demo1234`.
+- **Notas por item** (`MenuDigital.tsx`): textarea "Nota para cocina" en el detalle de cada platillo. Se guarda en `pedido_items.notas` y se muestra en PrePedido, PedidoActivo y Cocina.
+- **Llamar mesero** (`Mesa.tsx`, `routes/llamados.ts`, `migrations/013-llamados-mensaje.ts`): botón en Mesa con modal de mensajes predefinidos + texto libre. Backend: `POST /api/llamados/mesa/:id`, `GET /api/llamados/restaurante/:id`, `PUT /api/llamados/:id/atender`. Emite eventos socket `llamado:nuevo`/`llamado:atendido`.
+- **Pedir cuenta** (`PedidoActivo.tsx`): botón en vista de pedido activo que envía `tipo: 'cuenta'` al mesero.
+- **UI en overlays flotantes** (`Mesa.tsx`): PrePedido y PedidoActivo ahora se muestran como popups con backdrop semitransparente en lugar de navegar a otra ruta. Menú fullscreen, pre-pedido y pedido como sheets (móvil) o centrados (desktop). Botón ✕ para cerrar.
+- **Menú en grid 2-3 columnas** (`MenuDigital.tsx`): cards compactas con foto `aspect-[3/2]`, nombre, precio y botón +. Click → bottom sheet con foto grande, descripción, modificadores, notas, selector de cantidad y total calculado.
+- **Código limpiado**: eliminados `admin/Categorias.tsx` y `admin/Platillos.tsx` (reemplazados por `Menu.tsx`). Eliminado `totalConIVA` de `CartContext` (no se usaba).
 
 ### Cambios recientes (20/Jul/2026, deploy)
 - **Fix: logout ausente en vista móvil de Admin** (`AdminLayout.tsx`): el botón "Cerrar sesión" solo existía en el `<aside>` de desktop (`hidden md:flex`), así que en móvil (donde ese sidebar no se renderiza y solo queda el bottom nav de iconos) no había forma de cerrar sesión. Se agregó un `<header>` visible solo en móvil (`md:hidden`) con título + botón de cerrar sesión, igual al patrón ya usado en `CocinaPlaceholder`/`SuperPlaceholder`.
@@ -211,13 +229,12 @@ Libre 🟢
 - **Seed demo**: Admin `2292203219 / Rodriguez010020#`, 4 categorías, 11 platillos, 3 mesas, 1 mesero `2291111111 / demo1234`
 
 ### Frontend rutas activas
-- `/` — Landing page (sin selector de rol)
-- `/login` — Login por perfil (redirige según rol)
-- `/m/:restauranteId/:mesaId` — QR + mesa + código invitación + comensales + menú digital (con carrito flotante)
-- `/m/:restauranteId/:mesaId/prepedido` — Resumen del carrito + IVA + confirmar pedido
+- `/` — Landing page (QR scanner + login o mesa demo)
+- `/login` — Login/Registro toggle (celular+contraseña)
+- `/m/:restauranteId/:mesaId` — Mesa + código invitación + comensales + overlays de menú/pre-pedido/pedido
+- `/m/:restauranteId/:mesaId/prepedido` — Pre-pedido (fallback directo)
+- `/m/:restauranteId/:mesaId/pedido` — Pedido activo (fallback directo)
 - `/admin/menu` — Admin: CRUD unificado (categorías + platillos + modificadores + foto + search)
-- `/admin/categorias` — Admin: CRUD categorías (legacy)
-- `/admin/platillos` — Admin: CRUD platillos (legacy)
 - `/admin/mesas` — Admin: CRUD mesas + QR descargable
 - `/admin/staff` — Admin: CRUD staff
 - `/cocina` — Cocina: pedidos en vivo con estados de item clickeables
@@ -235,6 +252,9 @@ Libre 🟢
 - `GET /api/pedidos/mesa/:mesaId` — Pedidos activos de una mesa
 - `GET /api/cocina/pedidos` — Pedidos activos (cocina)
 - `PUT /api/cocina/pedidos/:id/items/:itemId` — Avanzar estado de item
+- `POST /api/llamados/mesa/:mesaId` — Llamar mesero
+- `GET /api/llamados/restaurante/:restauranteId` — Llamados activos
+- `PUT /api/llamados/:id/atender` — Atender llamado
 - `GET|POST|PUT|DELETE /api/admin/categorias[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/platillos[/:id][/duplicate|/foto]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/modificadores[/:id]` — CRUD admin
@@ -246,8 +266,8 @@ Libre 🟢
 ### Puerto local
 - Frontend: `:5173` (Vite dev, proxy `/api` → `:3000`)
 - Backend: `:3000`
-- PostgreSQL: `:5432` (nativo WSL)
-- Redis: `:6379` (nativo WSL)
+- PostgreSQL: `:5432`
+- Redis: `:6379`
 
 ## Tickets MVP (orden de implementación)
 
@@ -266,9 +286,9 @@ Libre 🟢
 ### Módulos MVP
 - **Módulo 1:** Menú Digital + QR (tickets 05, 06)
 - **Módulo 2:** Pedidos + Cocina (ticket 07)
-- **Módulo 5:** Mesero Híbrido (ticket 09)
-- **Módulo 6 básico:** Admin CRUD menú (ticket 08)
-- **Panel Super Admin:** ticket 04
+- **Módulo 5:** Mesero Híbrido (ticket 09) — ✅
+- **Módulo 6 básico:** Admin CRUD menú (ticket 08) — ✅
+- **Panel Super Admin:** ticket 04 — ✅
 
 ## Reglas críticas (no negociables)
 

@@ -17,10 +17,17 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Estado real:** completado (5/5)
 
-- [ ] All 12 migrations run without errors
-- [ ] Each table has `restaurante_id` FK with CASCADE on DELETE
-- [ ] `node-pg-migrate up` creates tables, `down` drops them in reverse order
-- [ ] Indexes on foreign keys and `celular` (unique per restaurante)
-- [ ] Enum types for `rol`, `estado_mesa`, `estado_item` defined
+- [x] All 12 migrations run without errors
+- [x] Each table has `restaurante_id` FK with CASCADE on DELETE
+- [x] `node-pg-migrate up` creates tables, `down` drops them in reverse order
+- [x] Indexes on foreign keys and `celular` (unique per restaurante)
+- [x] Enum types for `rol`, `estado_mesa`, `estado_item` defined
+
+**Notas:**
+- Las 12 migraciones existen en `backend/migrations/001-012*.ts`
+- `node-pg-migrate` corre automáticamente al iniciar backend (`backend/src/db.ts` → `runMigrations()`)
+- Enums: `rol_enum`, `estado_mesa_enum`, `estado_item_enum`, `estado_pedido_enum`, `estado_llamado_enum`
+- Cada FK con `onDelete: 'cascade'`
+- Scripts npm: `migrate:up` y `migrate:down`

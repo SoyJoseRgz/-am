@@ -3,15 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../stores/CartContext'
 import { api } from '../services/api'
 
-export default function PrePedido() {
-  const { restauranteId, mesaId } = useParams()
+export default function PrePedido(props?: { restauranteId?: string; mesaId?: string; onSuccess?: (pedidoId: number) => void; onClose?: () => void }) {
+  const params = useParams()
+  const restauranteId = props?.restauranteId || params.restauranteId
+  const mesaId = props?.mesaId || params.mesaId
   const navigate = useNavigate()
-  const { items, removeItem, updateCantidad, clearCart, totalSinIVA } = useCart()
+  const { items, itemsPorComensal, removeItem, updateCantidad, clearCart, totalSinIVA } = useCart()
   const [ivaPct, setIvaPct] = useState(16)
   const [ivaIncluido, setIvaIncluido] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState<number | null>(null)
   const [error, setError] = useState('')
+
+  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+  const usuarioId = currentUser.id || 0
 
   useEffect(() => {
     api<{ iva_porcentaje: number; iva_incluido: boolean }>(`/api/restaurantes/${restauranteId}/menu`)
@@ -40,6 +45,7 @@ export default function PrePedido() {
             precio_unitario: i.precioUnitario + i.modificadores.reduce((s, m) => s + m.precio, 0),
             notas: i.notas || undefined,
             modificador_ids: i.modificadores.map(m => m.id),
+            usuario_id: i.usuarioId,
           }))
         ),
       }
@@ -57,29 +63,19 @@ export default function PrePedido() {
   }
 
   if (success) {
-    return (
-      <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4">
-        <div className="max-w-sm w-full text-center space-y-4">
-          <div className="text-6xl">✅</div>
-          <h2 className="text-2xl font-bold">Pedido enviado</h2>
-          <p className="text-gray-500">Tu pedido #<span className="font-bold text-black">{success}</span> ha sido enviado a la cocina.</p>
-          <p className="text-gray-400 text-sm">El mesero te lo llevará cuando esté listo.</p>
-          <button
-            onClick={() => navigate(`/m/${restauranteId}/${mesaId}`)}
-            className="bg-black hover:bg-gray-800 text-white px-8 py-3 rounded-md font-semibold transition"
-          >
-            Volver al menú
-          </button>
-        </div>
-      </div>
-    )
+    if (props?.onSuccess) {
+      props.onSuccess(success)
+      return null
+    }
+    navigate(`/m/${restauranteId}/${mesaId}/pedido`, { replace: true })
+    return null
   }
 
   return (
     <div className="min-h-screen bg-white text-black">
       <div className="max-w-md mx-auto p-4 space-y-6">
         <div className="flex items-center justify-between">
-          <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-black text-sm">← Volver</button>
+          <button onClick={() => { if (props?.onClose) props.onClose(); else navigate(-1) }} className="text-gray-400 hover:text-black text-sm">← Volver</button>
           <h1 className="text-lg font-bold">Pre-pedido</h1>
           <div />
         </div>
@@ -88,7 +84,7 @@ export default function PrePedido() {
           <div className="text-center py-12">
             <p className="text-gray-400 mb-4">No hay items en el carrito</p>
             <button
-              onClick={() => navigate(`/m/${restauranteId}/${mesaId}`)}
+              onClick={() => { if (props?.onClose) props.onClose(); else navigate(`/m/${restauranteId}/${mesaId}`) }}
               className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-md text-sm"
             >
               Ver menú
@@ -96,48 +92,71 @@ export default function PrePedido() {
           </div>
         ) : (
           <>
-            <div className="space-y-3">
-              {items.map((item, i) => {
-                const itemTotal = (item.precioUnitario + item.modificadores.reduce((s, m) => s + m.precio, 0)) * item.cantidad
-                return (
-                  <div key={i} className="bg-white border border-gray-200 rounded-md p-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm">{item.nombre}</p>
-                        {item.modificadores.length > 0 && (
-                          <p className="text-gray-400 text-xs mt-0.5">
-                            {item.modificadores.map(m => m.nombre).join(', ')}
-                          </p>
-                        )}
-                      </div>
-                      <p className="font-bold text-sm">${itemTotal.toFixed(2)}</p>
-                    </div>
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center border border-gray-200 rounded-md">
-                        <button
-                          onClick={() => updateCantidad(i, -1)}
-                          className="px-2 py-1 text-sm hover:bg-gray-50"
-                        >
-                          −
-                        </button>
-                        <span className="px-3 text-sm font-medium">{item.cantidad}</span>
-                        <button
-                          onClick={() => updateCantidad(i, 1)}
-                          className="px-2 py-1 text-sm hover:bg-gray-50"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => removeItem(i)}
-                        className="text-xs text-red-500 hover:text-red-700 ml-auto"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+            <div className="space-y-6">
+              {itemsPorComensal.map(grupo => (
+                <div key={grupo.usuarioId} className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                  <h3 className="font-semibold text-sm text-gray-500 mb-3 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
+                      {grupo.usuarioNombre[0]}
+                    </span>
+                    {grupo.usuarioNombre}
+                  </h3>
+                  <div className="space-y-2">
+                    {grupo.items.map((item, i) => {
+                      const idx = items.findIndex(it =>
+                        it.platilloId === item.platilloId &&
+                        it.usuarioId === item.usuarioId &&
+                        JSON.stringify(it.modificadores) === JSON.stringify(item.modificadores) &&
+                        it.notas === item.notas
+                      )
+                      const itemTotal = (item.precioUnitario + item.modificadores.reduce((s, m) => s + m.precio, 0)) * item.cantidad
+                      return (
+                        <div key={`${grupo.usuarioId}-${i}`} className="bg-white border border-gray-200 rounded-md p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <p className="font-semibold text-sm">{item.nombre}</p>
+                              {item.modificadores.length > 0 && (
+                                <p className="text-gray-400 text-xs mt-0.5">
+                                  {item.modificadores.map(m => m.nombre).join(', ')}
+                                </p>
+                              )}
+                              {item.notas && (
+                                <p className="text-gray-400 text-xs italic mt-0.5">📝 {item.notas}</p>
+                              )}
+                            </div>
+                            <p className="font-bold text-sm">${itemTotal.toFixed(2)}</p>
+                          </div>
+                          {grupo.usuarioId === usuarioId && (
+                            <div className="flex items-center gap-3 mt-2">
+                              <div className="flex items-center border border-gray-200 rounded-md">
+                                <button
+                                  onClick={() => updateCantidad(idx, -1)}
+                                  className="px-2 py-1 text-sm hover:bg-gray-50"
+                                >
+                                  −
+                                </button>
+                                <span className="px-3 text-sm font-medium">{item.cantidad}</span>
+                                <button
+                                  onClick={() => updateCantidad(idx, 1)}
+                                  className="px-2 py-1 text-sm hover:bg-gray-50"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <button
+                                onClick={() => removeItem(idx)}
+                                className="text-xs text-red-500 hover:text-red-700 ml-auto"
+                              >
+                                Eliminar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
 
             <div className="border-t border-gray-200 pt-4 space-y-2 text-sm">
