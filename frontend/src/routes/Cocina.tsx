@@ -19,12 +19,14 @@ interface PedidoInfo {
 const ESTADOS = ['pendiente', 'preparando', 'listo', 'entregado'] as const
 const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', preparando: 'Preparando', listo: 'Listo', entregado: 'Entregado' }
 const ESTADO_DOT: Record<string, string> = { pendiente: 'bg-yellow-400', preparando: 'bg-blue-400', listo: 'bg-green-400', entregado: 'bg-gray-300' }
+const ESTADO_BG: Record<string, string> = { pendiente: 'bg-yellow-100 text-yellow-800', preparando: 'bg-blue-100 text-blue-800', listo: 'bg-green-100 text-green-800', entregado: 'bg-gray-100 text-gray-500' }
 
 export default function Cocina() {
   const navigate = useNavigate()
   const [pedidos, setPedidos] = useState<PedidoInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [kanban, setKanban] = useState(true)
+  const [selItem, setSelItem] = useState<(ItemInfo & { mesa_numero: number }) | null>(null)
 
   function cargar() {
     api<PedidoInfo[]>('/api/cocina/pedidos')
@@ -46,11 +48,10 @@ export default function Cocina() {
     }
   }, [])
 
-  async function avanzar(item: ItemInfo) {
-    const sig: Record<string, string> = { pendiente: 'preparando', preparando: 'listo', listo: 'entregado' }
-    const s = sig[item.estado]
-    if (!s) return
-    try { await api(`/api/cocina/pedidos/0/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado: s }) }) } catch {}
+  async function setEstado(item: ItemInfo & { mesa_numero: number }, estado: string) {
+    setSelItem(null)
+    if (item.estado === estado) return
+    try { await api(`/api/cocina/pedidos/0/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado }) }) } catch {}
   }
 
   const activos = pedidos.filter(p => p.items.some(i => i.estado !== 'entregado'))
@@ -62,6 +63,25 @@ export default function Cocina() {
   }, {} as Record<string, (ItemInfo & { mesa_numero: number })[]>)
 
   if (loading) return <div className="min-h-screen bg-white text-black flex items-center justify-center"><p className="text-gray-500">Cargando pedidos...</p></div>
+
+  function ItemCard({ item }: { item: ItemInfo & { mesa_numero: number } }) {
+    return (
+      <button onClick={() => setSelItem(item)}
+        className={`w-full text-left bg-white border border-gray-200 rounded-md p-3 border-l-4 hover:shadow-md transition ${
+          item.estado === 'pendiente' ? 'border-l-yellow-500' : item.estado === 'preparando' ? 'border-l-blue-500' : item.estado === 'listo' ? 'border-l-green-500' : 'border-l-gray-300'
+        }`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm">Mesa {item.mesa_numero}</p>
+            <p className="text-sm mt-0.5">{item.cantidad > 1 && <span className="text-gray-400">{item.cantidad}x </span>}{item.nombre}</p>
+            {item.modificadores.length > 0 && <p className="text-gray-400 text-xs mt-0.5">{item.modificadores.map(m => m.nombre).join(', ')}</p>}
+            {item.notas && <p className="text-orange-600 text-xs mt-0.5 italic">Nota: {item.notas}</p>}
+          </div>
+          <span className={`shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${ESTADO_DOT[item.estado]}`} />
+        </div>
+      </button>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white text-black">
@@ -87,22 +107,7 @@ export default function Cocina() {
                 <h3 className="font-semibold text-sm mb-3 text-gray-500">{ESTADO_LABEL[est]} ({agrupados[est].length})</h3>
                 <div className="space-y-2">
                   {agrupados[est].length === 0 && <p className="text-xs text-gray-300 italic">Sin {ESTADO_LABEL[est].toLowerCase()}</p>}
-                  {agrupados[est].map(item => (
-                    <button key={item.id} onClick={() => avanzar(item)}
-                      className={`w-full text-left bg-white border border-gray-200 rounded-md p-3 border-l-4 hover:shadow-md transition ${
-                        est === 'pendiente' ? 'border-l-yellow-500' : est === 'preparando' ? 'border-l-blue-500' : 'border-l-green-500'
-                      }`}>
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm">Mesa {item.mesa_numero}</p>
-                          <p className="text-sm mt-0.5">{item.cantidad > 1 && <span className="text-gray-400">{item.cantidad}x </span>}{item.nombre}</p>
-                          {item.modificadores.length > 0 && <p className="text-gray-400 text-xs mt-0.5">{item.modificadores.map(m => m.nombre).join(', ')}</p>}
-                          {item.notas && <p className="text-orange-600 text-xs mt-0.5 italic">Nota: {item.notas}</p>}
-                        </div>
-                        <span className={`shrink-0 w-2.5 h-2.5 rounded-full mt-1 ${ESTADO_DOT[est]}`} />
-                      </div>
-                    </button>
-                  ))}
+                  {agrupados[est].map(item => <ItemCard key={item.id} item={item} />)}
                 </div>
               </div>
             ))}
@@ -111,56 +116,69 @@ export default function Cocina() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activos.map(p => (
-                <PedidoCard key={p.id} pedido={p} onAvanzar={avanzar} />
+                <div key={p.id} className="bg-white border border-gray-200 rounded-md overflow-hidden">
+                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                    <div><span className="font-bold">Mesa {p.mesa_numero}</span><span className="text-gray-400 text-sm ml-2">#{p.id}</span></div>
+                    <span className="text-xs text-gray-400">{new Date(p.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {p.items.map(item => <ItemCard key={item.id} item={{ ...item, mesa_numero: p.mesa_numero }} />)}
+                  </div>
+                </div>
               ))}
             </div>
             {completados.length > 0 && (
               <>
                 <h2 className="text-lg font-semibold text-gray-500 mt-8">Entregados</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-60">
-                  {completados.map(p => <PedidoCard key={p.id} pedido={p} onAvanzar={avanzar} />)}
+                  {completados.map(p => (
+                    <div key={p.id} className="bg-white border border-gray-200 rounded-md overflow-hidden">
+                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                        <span className="font-bold">Mesa {p.mesa_numero}</span>
+                        <span className="text-gray-400 text-sm ml-2">#{p.id}</span>
+                      </div>
+                      <div className="p-4 space-y-2">
+                        {p.items.map(item => <ItemCard key={item.id} item={{ ...item, mesa_numero: p.mesa_numero }} />)}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </>
             )}
           </>
         )}
       </div>
-    </div>
-  )
-}
 
-function PedidoCard({ pedido, onAvanzar }: { pedido: PedidoInfo; onAvanzar: (item: ItemInfo) => void }) {
-  const tiempo = new Date(pedido.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })
-  return (
-    <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
-      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-        <div><span className="font-bold">Mesa {pedido.mesa_numero}</span><span className="text-gray-400 text-sm ml-2">#{pedido.id}</span></div>
-        <span className="text-xs text-gray-400">{tiempo}</span>
-      </div>
-      <div className="p-4 space-y-3">
-        {pedido.items.map(item => (
-          <div key={item.id} className="flex items-start gap-3">
-            <button onClick={() => onAvanzar(item)}
-              className={`shrink-0 w-3 h-3 mt-1 rounded-full border-2 transition cursor-pointer ${
-                item.estado === 'pendiente' ? 'bg-yellow-400 border-yellow-500' :
-                item.estado === 'preparando' ? 'bg-blue-400 border-blue-500' :
-                item.estado === 'listo' ? 'bg-green-400 border-green-500' : 'bg-gray-300 border-gray-400'
-              }`} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <p className="font-medium text-sm">{item.cantidad > 1 && <span className="text-gray-400">{item.cantidad}x </span>}{item.nombre}</p>
-                <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ml-2 ${
-                  item.estado === 'pendiente' ? 'bg-yellow-100 text-yellow-800' :
-                  item.estado === 'preparando' ? 'bg-blue-100 text-blue-800' :
-                  item.estado === 'listo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'
-                }`}>{ESTADO_LABEL[item.estado]}</span>
+      {selItem && (
+        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setSelItem(null)}>
+          <div className="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl p-5 shadow-xl space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold">Mesa {selItem.mesa_numero}</p>
+                <p className="text-lg font-semibold mt-1">{selItem.cantidad > 1 && <span className="text-gray-400">{selItem.cantidad}x </span>}{selItem.nombre}</p>
+                {selItem.modificadores.length > 0 && <p className="text-gray-400 text-sm mt-1">{selItem.modificadores.map(m => m.nombre).join(', ')}</p>}
+                {selItem.notas && <p className="text-orange-600 text-sm mt-1 italic">Nota: {selItem.notas}</p>}
               </div>
-              {item.modificadores.length > 0 && <p className="text-gray-400 text-xs mt-0.5">{item.modificadores.map(m => m.nombre).join(', ')}</p>}
-              {item.notas && <p className="text-orange-600 text-xs mt-0.5 italic">Nota: {item.notas}</p>}
+              <span className={`text-xs px-2 py-1 rounded-full shrink-0 ${ESTADO_BG[selItem.estado]}`}>{ESTADO_LABEL[selItem.estado]}</span>
             </div>
+            <p className="text-sm text-gray-500 font-medium">Cambiar estado:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ESTADOS.map(est => (
+                <button key={est} onClick={() => setEstado(selItem, est)}
+                  disabled={selItem.estado === est}
+                  className={`py-2.5 rounded-md text-sm font-medium transition ${
+                    selItem.estado === est
+                      ? `${ESTADO_BG[est]} cursor-default`
+                      : 'bg-gray-50 border border-gray-200 hover:bg-gray-100'
+                  }`}>
+                  {ESTADO_LABEL[est]}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setSelItem(null)} className="w-full text-gray-400 text-sm py-2">Cancelar</button>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

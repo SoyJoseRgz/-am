@@ -15,12 +15,14 @@ export function setupSocketIO(app: FastifyInstance) {
       socket.leave(`room:mesa:${restauranteId}:${mesaId}`)
     })
 
-    socket.on('join:restaurante', (restauranteId: number) => {
-      socket.join(`room:restaurante:${restauranteId}`)
+    socket.on('join:restaurante', (data: number | { restauranteId: number }) => {
+      const id = typeof data === 'number' ? data : data.restauranteId
+      socket.join(`room:restaurante:${id}`)
     })
 
-    socket.on('leave:restaurante', (restauranteId: number) => {
-      socket.leave(`room:restaurante:${restauranteId}`)
+    socket.on('leave:restaurante', (data: number | { restauranteId: number }) => {
+      const id = typeof data === 'number' ? data : data.restauranteId
+      socket.leave(`room:restaurante:${id}`)
     })
   })
 
