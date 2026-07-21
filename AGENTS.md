@@ -210,7 +210,7 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 | 09 — Mesero panel | ✅ | `routes/mesero.ts`, `routes/Mesero.tsx`, `services/socket.ts` |
 
 ### Cambios recientes (21/Jul/2026)
-- **Ticket 09 — Mesero panel**: Backend `routes/mesero.ts` con `GET /api/mesero/mesas`, `PUT .../estado`, unir/separar. Frontend `routes/Mesero.tsx` con semáforo de mesas coloreadas por estado, detalle en bottom sheet con acciones (ocupar, cobrar→limpiando, unir, separar, marcar libre), y sección de llamados activos con botón "Atender". Socket en vivo para cambios de estado y llamados. Ruta `/dashboard`. Seed: mesero demo `2291111111 / demo1234`.
+- **Ticket 09 — Mesero panel**: Backend `routes/mesero.ts` con `GET /api/mesero/mesas`, `PUT .../estado`, unir/separar. Frontend `routes/Mesero.tsx` con semáforo de mesas coloreadas por estado, detalle en bottom sheet con acciones (ocupar, cobrar→limpiando, unir, separar, marcar libre), y sección de llamados activos con botón "Atender". Socket en vivo para cambios de estado y llamados. Ruta `/dashboard`.
 - **Notas por item** (`MenuDigital.tsx`): textarea "Nota para cocina" en el detalle de cada platillo. Se guarda en `pedido_items.notas` y se muestra en PrePedido, PedidoActivo y Cocina.
 - **Llamar mesero** (`Mesa.tsx`, `routes/llamados.ts`, `migrations/013-llamados-mensaje.ts`): botón en Mesa con modal de mensajes predefinidos + texto libre. Backend: `POST /api/llamados/mesa/:id`, `GET /api/llamados/restaurante/:id`, `PUT /api/llamados/:id/atender`. Emite eventos socket `llamado:nuevo`/`llamado:atendido`.
 - **Pedir cuenta** (`PedidoActivo.tsx`): botón en vista de pedido activo que envía `tipo: 'cuenta'` al mesero.
@@ -226,7 +226,7 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - **Vista unificada de Menú** (`Menu.tsx`): reemplaza las vistas separadas de Categorías y Platillos en el sidebar. Categorías expandibles, cada una con sus platillos adentro. Barra de acciones (↑, ↓, Editar nombre, ✕ Eliminar) visible al expandir. Cada platillo en dos líneas: nombre + precio + botón Editar negro, secundarios abajo. Search bar filtra por nombre de platillo o categoría.
 - **Bug fixes**: Content-Type en DELETE sin body, duplicate platillo (concat→||), fotos dev server (`/fotos` route + vite proxy + FOTOS_DIR local), filtro `activo=true` en findByRestaurante, editId=-1 en POST platillo, CRUD modificadores (editar inline), foto preview en edición, auto-enter edit mode al crear platillo.
 - **Diseño**: black/white, logout en todas las vistas.
-- **Seed demo**: Admin `2292203219 / Rodriguez010020#`, 4 categorías, 11 platillos, 3 mesas, 1 mesero `2291111111 / demo1234`
+- **Seed demo**: Super admin `2299288981 / Rodriguez010020#` (sin restaurante demo precargado)
 
 ### Frontend rutas activas
 - `/` — Landing page (QR scanner + login o mesa demo)
