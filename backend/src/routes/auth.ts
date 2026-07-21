@@ -31,7 +31,7 @@ export default async function authRoutes(app: FastifyInstance) {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     await Session.create({ usuario_id: usuario.id, refresh_token: refreshToken, expires_at: expiresAt })
 
-    return { accessToken, refreshToken, usuario: { id: usuario.id, nombre: usuario.nombre, celular: usuario.celular, rol: usuario.rol } }
+    return { accessToken, refreshToken, usuario: { id: usuario.id, nombre: usuario.nombre, celular: usuario.celular, rol: usuario.rol, restaurante_id: usuario.restaurante_id } }
   })
 
   app.post('/api/auth/login', async (request, reply) => {
@@ -61,6 +61,7 @@ export default async function authRoutes(app: FastifyInstance) {
         nombre: usuario.nombre,
         celular: usuario.celular,
         rol: usuario.rol,
+        restaurante_id: usuario.restaurante_id,
         force_password_change: usuario.force_password_change,
       },
     }
