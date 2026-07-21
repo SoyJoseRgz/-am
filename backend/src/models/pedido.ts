@@ -145,7 +145,7 @@ export async function findActivos(restauranteId: number) {
 export async function updateItemEstado(itemId: number, estado: string, motivo?: string) {
   if (motivo) {
     const r = await pool.query<PedidoItem>(
-      `UPDATE pedido_items SET estado = $1, notas = CONCAT(COALESCE(notas || ' | ', ''), 'CANCELADO: ', $3) WHERE id = $2 RETURNING *`,
+      `UPDATE pedido_items SET estado = $1, notas = COALESCE(notas || ' | ', '') || 'CANCELADO: ' || $3 WHERE id = $2 RETURNING *`,
       [estado, itemId, motivo],
     )
     return r.rows[0] || null
