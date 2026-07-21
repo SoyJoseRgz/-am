@@ -52,24 +52,25 @@ export async function cocinaRoutes(app: FastifyInstance) {
 
   app.put('/api/cocina/pedidos/:id/items/:itemId', async (request, reply) => {
     const { itemId } = request.params as { itemId: string }
-    const { estado } = request.body as { estado: string }
+    const { estado, motivo } = request.body as { estado: string; motivo?: string }
 
-    if (!['pendiente', 'preparando', 'listo', 'entregado'].includes(estado)) {
+    if (!['pendiente', 'preparando', 'listo', 'entregado', 'cancelado'].includes(estado)) {
       return reply.status(400).send({ error: 'Estado inválido' })
     }
 
     const item = await Pedido.findByItemId(Number(itemId))
     if (!item) return reply.status(404).send({ error: 'Item no encontrado' })
 
-    const updated = await Pedido.updateItemEstado(Number(itemId), estado)
+    const updated = await Pedido.updateItemEstado(Number(itemId), estado, motivo)
 
     app.io.to(`room:mesa:${item.restaurante_id}:${item.mesa_id}`).emit('item:actualizado', {
       itemId: Number(itemId),
       estado,
+      motivo,
     })
     app.io
       .to(`room:restaurante:${item.restaurante_id}`)
-      .emit('item:actualizado', { itemId: Number(itemId), estado })
+      .emit('item:actualizado', { itemId: Number(itemId), estado, motivo })
     return updated
   })
 }
