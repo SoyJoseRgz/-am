@@ -35,10 +35,13 @@ export default function MeseroKanban({ restauranteId, onClose }: { restauranteId
   useEffect(() => {
     cargar()
     connectToRestaurante(restauranteId)
+    const onConnect = () => socket.emit('join:restaurante', restauranteId)
+    socket.on('connect', onConnect)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
     return () => {
+      socket.off('connect', onConnect)
       socket.off('pedido:nuevo', h)
       socket.off('item:actualizado', h)
       socket.emit('leave:restaurante', restauranteId)

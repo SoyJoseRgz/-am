@@ -39,10 +39,13 @@ export default function Cocina() {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     const restauranteId = user.restaurante_id
     if (restauranteId) connectToRestaurante(restauranteId)
+    const onConnect = () => { if (restauranteId) socket.emit('join:restaurante', restauranteId) }
+    socket.on('connect', onConnect)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
     return () => {
+      socket.off('connect', onConnect)
       socket.off('pedido:nuevo', h); socket.off('item:actualizado', h)
       if (restauranteId) socket.emit('leave:restaurante', restauranteId)
     }
