@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../services/api'
-import { socket } from '../services/socket'
+import { connectToRestaurante, socket } from '../services/socket'
 
 interface ModInfo { id: number; nombre: string; precio: string }
 interface ItemInfo {
@@ -38,7 +38,7 @@ export default function Cocina() {
     cargar()
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     const restauranteId = user.restaurante_id
-    if (restauranteId) socket.emit('join:restaurante', restauranteId)
+    if (restauranteId) connectToRestaurante(restauranteId)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
