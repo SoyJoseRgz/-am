@@ -15,7 +15,6 @@ export default function ForcePasswordChange() {
     setLoading(true)
     setError('')
     try {
-      const refreshToken = localStorage.getItem('refreshToken')
       await api('/api/auth/reset-password', {
         method: 'POST',
         body: JSON.stringify({ celular: user.celular, otp: '000000', newPassword }),
