@@ -31,7 +31,7 @@ function Home() {
           Iniciar sesión
         </Link>
       ) : (
-        <Link to="/m/2/1" className="bg-black hover:bg-gray-800 px-8 py-3 rounded-md font-semibold transition text-lg text-white">
+        <Link to="/m/1/1" className="bg-black hover:bg-gray-800 px-8 py-3 rounded-md font-semibold transition text-lg text-white">
           Mesa demo
         </Link>
       )}

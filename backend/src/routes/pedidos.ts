@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import * as Pedido from '../models/pedido.js'
+import * as Mesa from '../models/mesa.js'
 
 export default async function pedidoRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
@@ -7,11 +8,16 @@ export default async function pedidoRoutes(app: FastifyInstance) {
   app.post('/api/pedidos', async (request, reply) => {
     const { mesa_id, items } = request.body as any
     const usuarioId = request.user!.userId!
-    const restauranteId = request.user!.restauranteId!
 
     if (!mesa_id || !items || items.length === 0) {
       return reply.status(400).send({ error: 'Mesa e items requeridos' })
     }
+
+    const mesa = await Mesa.findById(Number(mesa_id))
+    if (!mesa) {
+      return reply.status(404).send({ error: 'Mesa no encontrada' })
+    }
+    const restauranteId = mesa.restaurante_id
 
     const pedido = await Pedido.create({
       restaurante_id: restauranteId,
@@ -25,10 +31,13 @@ export default async function pedidoRoutes(app: FastifyInstance) {
     return pedido
   })
 
-  app.get('/api/pedidos/mesa/:mesaId', async (request) => {
+  app.get('/api/pedidos/mesa/:mesaId', async (request, reply) => {
     const { mesaId } = request.params as { mesaId: string }
-    const restauranteId = request.user!.restauranteId!
-    return Pedido.findByMesa(restauranteId, Number(mesaId))
+    const mesa = await Mesa.findById(Number(mesaId))
+    if (!mesa) {
+      return reply.status(404).send({ error: 'Mesa no encontrada' })
+    }
+    return Pedido.findByMesa(mesa.restaurante_id, Number(mesaId))
   })
 }
 
