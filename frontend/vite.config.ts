@@ -16,12 +16,28 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
+        skipWaiting: true,
+        clientsClaim: true,
+        runtimeCaching: [{
+          urlPattern: /^https?:\/\/.*\/api\/.*/i,
+          handler: 'NetworkFirst',
+          options: {
+            cacheName: 'api-cache',
+            expiration: { maxEntries: 50, maxAgeSeconds: 300 },
+          },
+        }],
+      },
       manifest: {
         name: 'miResto',
         short_name: 'miResto',
         description: 'Menú digital y pedidos para tu restaurante',
         theme_color: '#1a1a2e',
-        background_color: '#ffffff',
+        background_color: '#faf6f2',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -34,6 +50,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    headers: {
+      'Cache-Control': 'no-cache',
+    },
     proxy: {
       '/api': 'http://localhost:3000',
       '/fotos': 'http://localhost:3000',
