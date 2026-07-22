@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
+import { ShoppingCart, Users, X, Bell, LogOut, Copy, Check } from 'lucide-react'
 import { Input } from '../components/ui/input'
 import { Separator } from '../components/ui/separator'
 import { api, getCurrentUser } from '../services/api'
@@ -35,7 +35,8 @@ function MesaInner() {
   const [llamarExito, setLlamarExito] = useState(false)
   const { items } = useCart()
 
-  const currentUser = getCurrentUser()
+  const [user, setUser] = useState(getCurrentUser())
+  const currentUser = user
   const usuarioId = currentUser.id || 0
   const usuarioNombre = currentUser.nombre || ''
   const [showPerfil, setShowPerfil] = useState(false)
@@ -45,6 +46,8 @@ function MesaInner() {
   const [newPassword, setNewPassword] = useState('')
   const [perfilMsg, setPerfilMsg] = useState('')
   const [perfilError, setPerfilError] = useState('')
+  const [codigoCopyOk, setCodigoCopyOk] = useState(false)
+  const [showActivo, setShowActivo] = useState(false)
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
   const cartTotal = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.precioUnitario * i.cantidad, 0)
 
@@ -92,6 +95,9 @@ function MesaInner() {
       const data = await api<any>('/api/auth/perfil', { method: 'PUT', body: JSON.stringify(body) })
       if (data.error) { setPerfilError(data.error); return }
       if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken)
+      const updated = { ...currentUser, nombre: editNombre, fecha_nacimiento: data.usuario.fecha_nacimiento || null }
+      localStorage.setItem('user', JSON.stringify(updated))
+      setUser(updated)
       setEditFecha(data.usuario.fecha_nacimiento || '')
       setPasswordActual(''); setNewPassword('')
       setPerfilMsg('Perfil actualizado')
@@ -120,18 +126,30 @@ function MesaInner() {
       {/* header */}
       <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <h1 className="text-lg font-medium">Mesa {mesa.numero}</h1>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowLlamar(true)}
-              className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium border border-[#e5ddd2] rounded-md bg-white hover:bg-[#faf6f2] text-[#111] transition-colors">
-              <Bell className="w-3.5 h-3.5" /> Llamar
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-lg font-medium shrink-0">Mesa {mesa.numero}</h1>
+            {codigoInvitacion && (
+              <button onClick={() => {
+                navigator.clipboard.writeText(codigoInvitacion)
+                setCodigoCopyOk(true)
+                setTimeout(() => setCodigoCopyOk(false), 2000)
+              }} className="flex items-center gap-1 h-6 px-2 rounded-md border border-[#e5ddd2] bg-white text-[10px] font-mono text-[#888] hover:text-[#111] hover:border-[#888] transition-colors shrink-0">
+                {codigoCopyOk ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
+                {codigoInvitacion}
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={() => setShowLlamar(true)} title="Llamar mesero"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111] transition-colors">
+              <Bell className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => setShowMesa(true)} className="flex items-center gap-1.5 text-xs text-[#888] hover:text-[#111] transition-colors">
+            <button onClick={() => setShowMesa(true)} title="Comensales"
+              className="w-8 h-8 flex items-center justify-center rounded-md border border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111] transition-colors">
               <Users className="w-4 h-4" />
-              {comensales.length > 0 && <span className="text-sm font-medium">{comensales.length}</span>}
             </button>
-            <button onClick={() => setShowPerfil(true)}
-              className="w-7 h-7 rounded-full bg-[#111] text-white flex items-center justify-center text-[11px] font-bold shrink-0 hover:opacity-80 transition-opacity">
+            <button onClick={() => setShowPerfil(true)} title="Perfil"
+              className="w-8 h-8 rounded-full bg-[#111] text-white flex items-center justify-center text-xs font-bold shrink-0 hover:opacity-80 transition-opacity">
               {usuarioNombre[0]}
             </button>
           </div>
@@ -164,17 +182,31 @@ function MesaInner() {
 
       {/* sheet de carrito */}
       {showCart && (
-        <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setShowCart(false)}>
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => { setShowCart(false); setShowActivo(false) }}>
           <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
-              <span className="font-semibold text-sm">{tienePedido ? 'Mi pedido' : 'Pre-pedido'}</span>
-              <button onClick={() => setShowCart(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
+              <span className="font-semibold text-sm">
+                {showActivo ? 'Mi pedido' : items.length > 0 ? 'Revisa tu pedido' : 'Mi pedido'}
+              </span>
+              <button onClick={() => { setShowCart(false); setShowActivo(false) }} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
             </div>
             <div className="p-4">
-              {tienePedido ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => setShowCart(false)} onSumarMas={() => setShowCart(false)} />
+              {showActivo ? (
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
+              ) : items.length > 0 ? (
+                <div className="space-y-4">
+                  <PrePedido restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
+                  {tienePedido && (
+                    <button onClick={() => setShowActivo(true)}
+                      className="w-full h-10 text-xs border border-[#e5ddd2] text-[#888] hover:text-[#111] rounded-md flex items-center justify-center gap-1.5 transition">
+                      Ver pedido activo →
+                    </button>
+                  )}
+                </div>
+              ) : tienePedido ? (
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
               ) : (
-                <PrePedido restauranteId={restauranteId} mesaId={mesaId} onClose={() => setShowCart(false)} onSuccess={() => { setTienePedido(true); setShowCart(false) }} />
+                <PrePedido restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
             </div>
           </div>
