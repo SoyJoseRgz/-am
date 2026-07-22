@@ -2,18 +2,21 @@ import { FastifyInstance } from 'fastify'
 import { pool } from '../db.js'
 
 export default async function llamadosRoutes(app: FastifyInstance) {
-  app.post<{ Params: { mesaId: string }; Body: { tipo: string; mensaje?: string; restaurante_id: number } }>(
+  app.post<{ Params: { mesaId: string }; Body: { tipo: string; mensaje?: string; restaurante_id: number; split?: string; tip?: number } }>(
     '/api/llamados/mesa/:mesaId',
     { preHandler: [app.authenticate] },
     async (req, reply) => {
       const usuarioId = req.user!.userId
       const mesaId = parseInt(req.params.mesaId)
-      const { tipo, mensaje, restaurante_id: restauranteId } = req.body
+      const { tipo, mensaje, restaurante_id: restauranteId, split, tip } = req.body
+
+      const extra = split ? JSON.stringify({ split, tip }) : null
+      const mensajeFinal = extra ? (mensaje ? mensaje + ' ||| ' + extra : extra) : mensaje || null
 
       const r = await pool.query(
         `INSERT INTO llamados (restaurante_id, mesa_id, usuario_id, tipo, mensaje)
          VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [restauranteId, mesaId, usuarioId, tipo, mensaje || null],
+        [restauranteId, mesaId, usuarioId, tipo, mensajeFinal],
       )
 
       const llamado = r.rows[0]

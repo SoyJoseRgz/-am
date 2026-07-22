@@ -125,7 +125,18 @@ export default function Mesero() {
                   <div>
                     <span className="font-semibold">Mesa {l.mesa_numero}</span>
                     {l.usuario_nombre && <span className="text-gray-500 ml-1">— {l.usuario_nombre}</span>}
-                    <p className="text-gray-600 text-xs mt-0.5">{l.mensaje || l.tipo}</p>
+                    <p className="text-gray-600 text-xs mt-0.5">
+                      {l.tipo === 'cuenta' ? '🧾 Cuenta' : (l.mensaje || l.tipo)}
+                      {l.tipo === 'cuenta' && l.mensaje && (() => {
+                        const s = l.mensaje.includes('|||') ? l.mensaje.split('|||')[1] : null
+                        if (!s) return null
+                        try {
+                          const p = JSON.parse(s)
+                          const label = p.split === 'iguales' ? 'Iguales' : p.split === 'yo_invito' ? 'Yo invito' : 'Individual'
+                          return <span className="ml-1 text-gray-400">· {label}{p.tip > 0 ? ` (${p.tip}% propina)` : ''}</span>
+                        } catch { return null }
+                      })()}
+                    </p>
                   </div>
                   <button onClick={() => atenderLlamado(l.id)} className="text-xs bg-black text-white px-2 py-1 rounded-md shrink-0">
                     Atender

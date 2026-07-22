@@ -77,6 +77,34 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const todosEntregados = itemsDelDia.length > 0 && itemsDelDia.every(i => i.estado === 'entregado')
   const [cuentaEnviando, setCuentaEnviando] = useState(false)
   const [cuentaEnviada, setCuentaEnviada] = useState(false)
+  const [ivaPct, setIvaPct] = useState(16)
+  const [ivaIncluido, setIvaIncluido] = useState(true)
+  const [split, setSplit] = useState<'individual' | 'iguales' | 'yo_invito'>('individual')
+  const [yoInvitaIdx, setYoInvitaIdx] = useState(0)
+  const [tip, setTip] = useState(0)
+
+  useEffect(() => {
+    api<{ iva_porcentaje: number; iva_incluido: boolean }>(`/api/restaurantes/${restauranteId}/menu`)
+      .then(d => { setIvaPct(d.iva_porcentaje); setIvaIncluido(d.iva_incluido) })
+      .catch(() => {})
+  }, [restauranteId])
+
+  const groups: Record<number, { nombre: string; items: ItemData[]; subtotal: number }> = {}
+  for (const item of itemsDelDia) {
+    const uid = item.usuario_id
+    if (!groups[uid]) groups[uid] = { nombre: item.comensal_nombre || 'Comensal', items: [], subtotal: 0 }
+    groups[uid].items.push(item)
+    groups[uid].subtotal += Number(item.precio_unitario) * item.cantidad
+  }
+  const personas = Object.values(groups)
+  const total = personas.reduce((s, p) => s + p.subtotal, 0)
+  const iva = ivaIncluido
+    ? total - total / (1 + ivaPct / 100)
+    : total * ivaPct / 100
+  const totalConIva = ivaIncluido ? total : total + iva
+  const tipAmount = totalConIva * tip / 100
+  const granTotal = totalConIva + tipAmount
+  const porPersona = split === 'iguales' && personas.length > 0 ? granTotal / personas.length : 0
 
   async function cancelarItem(item: ItemData) {
     setCancelandoId(item.id)
@@ -91,7 +119,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     try {
       await api(`/api/llamados/mesa/${mesaId}`, {
         method: 'POST',
-        body: JSON.stringify({ tipo: 'cuenta', restaurante_id: Number(restauranteId) }),
+        body: JSON.stringify({ tipo: 'cuenta', restaurante_id: Number(restauranteId), split, tip }),
       })
       setCuentaEnviada(true)
     } catch {}
@@ -186,16 +214,104 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               Sumar más
             </button>
 
+            <div className="border-t border-gray-200 pt-4 space-y-2 text-sm">
+              {personas.map((p, i) => (
+                <div key={i} className="flex justify-between text-gray-500">
+                  <span>{p.nombre}</span>
+                  <span>${p.subtotal.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-gray-500">
+                <span>IVA ({ivaPct}%)</span>
+                <span>${iva.toFixed(2)}</span>
+              </div>
+              {tip > 0 && (
+                <div className="flex justify-between text-gray-500">
+                  <span>Propina ({tip}%)</span>
+                  <span>${tipAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-base border-t border-gray-200 pt-2">
+                <span>Total</span>
+                <span>${granTotal.toFixed(2)}</span>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">Dividir cuenta</div>
+              <div className="flex gap-2">
+                {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
+                  <button key={s} onClick={() => setSplit(s)}
+                    className={`flex-1 py-2 rounded-md text-xs border ${split === s ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                    {s === 'individual' ? 'Individual' : s === 'iguales' ? 'Iguales' : 'Yo invito'}
+                  </button>
+                ))}
+              </div>
+              {split === 'individual' && (
+                <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 space-y-1">
+                  {personas.map((p, i) => {
+                    const ivaShare = (p.subtotal / total) * iva
+                    const tipShare = (p.subtotal / total) * tipAmount
+                    return (
+                      <div key={i} className="flex justify-between">
+                        <span>{p.nombre}</span>
+                        <span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+              {split === 'iguales' && (
+                <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 flex justify-between">
+                  <span>Cada quien</span>
+                  <span className="font-semibold">${porPersona.toFixed(2)}</span>
+                </div>
+              )}
+              {split === 'yo_invito' && (
+                <div className="mt-2 space-y-2">
+                  <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">¿Quién invita?</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {personas.map((p, i) => (
+                      <button key={i} onClick={() => setYoInvitaIdx(i)}
+                        className={`px-4 py-2 rounded-md text-xs border ${yoInvitaIdx === i ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                        {p.nombre}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border border-gray-200 rounded-md p-3 text-sm space-y-1">
+                    {personas.map((p, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span>{p.nombre}</span>
+                        <span className={i === yoInvitaIdx ? 'font-semibold' : 'text-gray-400'}>
+                          {i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2 items-center">
+              <span className="text-xs text-gray-500">Propina:</span>
+              {[0, 10, 15, 20].map(t => (
+                <button key={t} onClick={() => setTip(t)}
+                  className={`px-3 py-1 rounded-md text-xs border ${tip === t ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                  {t}%
+                </button>
+              ))}
+            </div>
+
             <button
               onClick={pedirCuenta}
-              disabled={cuentaEnviando || cuentaEnviada}
-              className={`w-full border py-3 rounded-md font-semibold transition ${
+              disabled={cuentaEnviando || cuentaEnviada || personas.length === 0}
+              className={`w-full py-3 rounded-md font-semibold transition ${
                 cuentaEnviada
-                  ? 'bg-green-50 border-green-200 text-green-700'
-                  : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                  ? 'bg-green-50 border border-green-200 text-green-700'
+                  : 'bg-black hover:bg-gray-800 text-white'
               }`}
             >
-              {cuentaEnviada ? '✓ Cuenta solicitada' : 'Pedir cuenta'}
+              {cuentaEnviada ? '✓ Cuenta solicitada' : `Pedir cuenta — $${granTotal.toFixed(2)}`}
             </button>
           </>
         )}
