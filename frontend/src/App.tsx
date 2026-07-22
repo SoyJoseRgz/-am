@@ -1,5 +1,9 @@
 import { Routes, Route, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Separator } from '@/components/ui/separator'
 import Mesa from './routes/Mesa'
 import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
@@ -30,31 +34,33 @@ function Home() {
   }, [token, navigate])
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
       {token && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => { localStorage.clear(); navigate('/login') }}
-          className="absolute top-4 right-4 text-sm text-gray-400 hover:text-black"
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
         >
           Cerrar sesión
-        </button>
+        </Button>
       )}
       <h1 className="text-5xl font-bold mb-2">miResto</h1>
-      <p className="text-gray-500 text-lg mb-8">Menú digital para tu restaurante</p>
+      <p className="text-muted-foreground text-lg mb-8">Menú digital para tu restaurante</p>
       {!token ? (
         <div className="flex flex-col items-center gap-4">
-          <Link to="/login" className="bg-black hover:bg-gray-800 px-8 py-3 rounded-md font-semibold transition text-lg text-white">
-            Iniciar sesión
+          <Link to="/login">
+            <Button className="px-8 py-6 text-lg bg-black hover:bg-gray-800 text-white">Iniciar sesión</Button>
           </Link>
-          <span className="text-gray-300 text-sm">o</span>
+          <span className="text-muted-foreground text-sm">o</span>
           <QRScanner />
         </div>
       ) : (
         <div className="flex flex-col items-center gap-4">
-          <Link to="/m/1/1" className="bg-black hover:bg-gray-800 px-8 py-3 rounded-md font-semibold transition text-lg text-white">
-            Mesa demo
+          <Link to="/m/1/1">
+            <Button className="px-8 py-6 text-lg bg-black hover:bg-gray-800 text-white">Mesa demo</Button>
           </Link>
-          <span className="text-gray-300 text-sm">o</span>
+          <span className="text-muted-foreground text-sm">o</span>
           <QRScanner />
         </div>
       )}
@@ -135,42 +141,32 @@ function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4">
-      {mode === 'login' ? (
-        <>
-          <h2 className="text-2xl font-bold mb-6">Iniciar sesión</h2>
-          <form className="w-full max-w-sm space-y-4" onSubmit={handleLogin}>
-            <input type="tel" placeholder="Celular" value={celular} onChange={e => setCelular(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-50 border border-gray-200 focus:border-gray-400 outline-none" />
-            <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-50 border border-gray-200 focus:border-gray-400 outline-none" />
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle>{mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form className="space-y-4" onSubmit={mode === 'login' ? handleLogin : handleRegister}>
+            <Input type="tel" placeholder="Celular" value={celular} onChange={e => setCelular(e.target.value)} />
+            <Input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button className="w-full bg-black hover:bg-gray-800 p-3 rounded-md font-semibold transition text-white">Entrar</button>
+            <Button type="submit" className="w-full bg-black hover:bg-gray-800 text-white">
+              {mode === 'login' ? 'Entrar' : 'Registrarse'}
+            </Button>
           </form>
-          <p className="text-gray-400 text-sm mt-4">
-            ¿No tienes cuenta?{' '}
-            <button onClick={() => { setMode('register'); setError('') }} className="text-black underline hover:no-underline">Crear cuenta</button>
-          </p>
-          <Link to="/" className="text-gray-400 text-sm mt-2 hover:text-black">← Volver</Link>
-        </>
-      ) : (
-        <>
-          <h2 className="text-2xl font-bold mb-6">Crear cuenta</h2>
-          <form className="w-full max-w-sm space-y-4" onSubmit={handleRegister}>
-            <input type="tel" placeholder="Celular" value={celular} onChange={e => setCelular(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-50 border border-gray-200 focus:border-gray-400 outline-none" />
-            <input type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)}
-              className="w-full p-3 rounded-md bg-gray-50 border border-gray-200 focus:border-gray-400 outline-none" />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <button className="w-full bg-black hover:bg-gray-800 p-3 rounded-md font-semibold transition text-white">Registrarse</button>
-          </form>
-          <p className="text-gray-400 text-sm mt-4">
-            ¿Ya tienes cuenta?{' '}
-            <button onClick={() => { setMode('login'); setError('') }} className="text-black underline hover:no-underline">Iniciar sesión</button>
-          </p>
-          <Link to="/" className="text-gray-400 text-sm mt-2 hover:text-black">← Volver</Link>
-        </>
-      )}
+          <Separator className="my-4" />
+          <div className="flex justify-between items-center">
+            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">← Volver</Link>
+            <button
+              onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
+              className="text-sm text-foreground underline underline-offset-4 hover:no-underline"
+            >
+              {mode === 'login' ? 'Crear cuenta' : 'Iniciar sesión'}
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
