@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ import AdminPedidos from './routes/admin/Pedidos'
 import Mesero from './routes/Mesero'
 import Super from './routes/Super'
 import ForcePasswordChange from './routes/ForcePasswordChange'
+import QRScanner from './components/QRScanner'
 
 function redirectPorRol(rol: string) {
   const map: Record<string, string> = {
@@ -24,6 +25,49 @@ function redirectPorRol(rol: string) {
     comensal: '/',
   }
   return map[rol] || '/'
+}
+
+function Home() {
+  const navigate = useNavigate()
+  const token = localStorage.getItem('accessToken')
+
+  return (
+    <div className="min-h-screen bg-[#f5f5f0] text-[#111] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 59px, #000 59px, #000 60px),
+                            repeating-linear-gradient(90deg, transparent, transparent 59px, #000 59px, #000 60px)`
+        }}
+      />
+      <div className="relative z-10 flex flex-col items-center gap-8">
+        <div className="text-center">
+          <h1 className="text-4xl sm:text-5xl font-light tracking-tight text-[#111] mb-1">miResto</h1>
+          <p className="text-sm text-[#888] tracking-[0.2em] uppercase">Menú digital para tu restaurante</p>
+        </div>
+
+        <Card className="w-full max-w-sm shadow-md border border-[#e5e5e0]">
+          <CardContent className="pt-6 pb-5 space-y-5">
+            <p className="text-sm text-[#888] text-center">Escanea el código QR de tu mesa</p>
+            <QRScanner />
+            {token && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { localStorage.clear(); navigate('/') }}
+                className="w-full text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cerrar sesión
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
+        <Link to="/login" className="text-xs text-[#aaa] hover:text-[#111] underline underline-offset-2">
+          Iniciar sesión con otra cuenta
+        </Link>
+      </div>
+    </div>
+  )
 }
 
 function AuthScreen() {
@@ -186,6 +230,10 @@ function AuthScreen() {
             <a href="#" className="text-[#111] underline underline-offset-2 hover:no-underline">Política de privacidad</a>
           </p>
         )}
+
+        <Link to="/" className="text-xs text-[#aaa] hover:text-[#111] underline underline-offset-2">
+          ← Ya tengo cuenta
+        </Link>
       </div>
     </div>
   )
@@ -194,7 +242,7 @@ function AuthScreen() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<AuthScreen />} />
+      <Route path="/" element={<Home />} />
       <Route path="/login" element={<AuthScreen />} />
       <Route path="/m/:restauranteId/:mesaId" element={<Mesa />} />
       <Route path="/admin" element={<AdminLayout />}>
