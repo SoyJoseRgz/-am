@@ -262,8 +262,6 @@ export default function Mesero() {
                   restauranteId={String(user.restaurante_id)}
                   usuarioId={user.id || 0}
                   usuarioNombre={user.nombre || 'Mesero'}
-                  onClose={() => setTomarPedido(null)}
-                  onCartClick={() => setShowPre(true)}
                 />
               )}
             </CartProvider>
