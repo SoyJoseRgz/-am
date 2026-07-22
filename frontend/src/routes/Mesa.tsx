@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Users, X } from 'lucide-react'
+import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
+import { Input } from '../components/ui/input'
+import { Separator } from '../components/ui/separator'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, leaveMesa, socket } from '../services/socket'
-import { MESA_ESTADO_LABEL } from '../constants/estados'
+
 import { CartProvider, useCart } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 import PrePedido from './PrePedido'
@@ -36,6 +38,13 @@ function MesaInner() {
   const currentUser = getCurrentUser()
   const usuarioId = currentUser.id || 0
   const usuarioNombre = currentUser.nombre || ''
+  const [showPerfil, setShowPerfil] = useState(false)
+  const [editNombre, setEditNombre] = useState(usuarioNombre)
+  const [editFecha, setEditFecha] = useState(currentUser.fecha_nacimiento || '')
+  const [passwordActual, setPasswordActual] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [perfilMsg, setPerfilMsg] = useState('')
+  const [perfilError, setPerfilError] = useState('')
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
   const cartTotal = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.precioUnitario * i.cantidad, 0)
 
@@ -74,9 +83,19 @@ function MesaInner() {
 
   useEffect(() => { if (cuentaCerrada) { const t = setTimeout(() => { limpiarCarrito(); navigate('/') }, 5000); return () => clearTimeout(t) } }, [cuentaCerrada, navigate])
 
-  const estadoBadge = (e: string) => {
-    const c: Record<string, string> = { libre: 'bg-green-100 text-green-700', ocupada: 'bg-red-100 text-red-700', unida: 'bg-yellow-100 text-yellow-700', limpiando: 'bg-gray-100 text-gray-600' }
-    return c[e] || 'bg-gray-100 text-gray-600'
+  async function guardarPerfil() {
+    setPerfilMsg(''); setPerfilError('')
+    try {
+      const body: Record<string, any> = { nombre: editNombre }
+      if (editFecha !== (currentUser.fecha_nacimiento || '')) body.fecha_nacimiento = editFecha || null
+      if (passwordActual && newPassword) { body.password_actual = passwordActual; body.new_password = newPassword }
+      const data = await api<any>('/api/auth/perfil', { method: 'PUT', body: JSON.stringify(body) })
+      if (data.error) { setPerfilError(data.error); return }
+      if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken)
+      setEditFecha(data.usuario.fecha_nacimiento || '')
+      setPasswordActual(''); setNewPassword('')
+      setPerfilMsg('Perfil actualizado')
+    } catch { setPerfilError('Error de conexión') }
   }
 
   if (loading && !joinAttempted) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex items-center justify-center"><p className="text-[#888]">Uniéndote a la mesa...</p></div>
@@ -101,14 +120,21 @@ function MesaInner() {
       {/* header */}
       <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <button onClick={() => setShowMesa(true)} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <h1 className="text-lg font-medium">Mesa {mesa.numero}</h1>
-            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${estadoBadge(mesa.estado)}`}>{MESA_ESTADO_LABEL[mesa.estado] || mesa.estado}</span>
-          </button>
-          <button onClick={() => setShowMesa(true)} className="flex items-center gap-1.5 text-xs text-[#888] hover:text-[#111] transition-colors">
-            <Users className="w-4 h-4" />
-            {comensales.length > 0 && <span>{comensales.length}</span>}
-          </button>
+          <h1 className="text-lg font-medium">Mesa {mesa.numero}</h1>
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowLlamar(true)}
+              className="flex items-center gap-1.5 h-8 px-3 text-xs font-medium border border-[#e5ddd2] rounded-md bg-white hover:bg-[#faf6f2] text-[#111] transition-colors">
+              <Bell className="w-3.5 h-3.5" /> Llamar
+            </button>
+            <button onClick={() => setShowMesa(true)} className="flex items-center gap-1.5 text-xs text-[#888] hover:text-[#111] transition-colors">
+              <Users className="w-4 h-4" />
+              {comensales.length > 0 && <span className="text-sm font-medium">{comensales.length}</span>}
+            </button>
+            <button onClick={() => setShowPerfil(true)}
+              className="w-7 h-7 rounded-full bg-[#111] text-white flex items-center justify-center text-[11px] font-bold shrink-0 hover:opacity-80 transition-opacity">
+              {usuarioNombre[0]}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -223,6 +249,61 @@ function MesaInner() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* sheet de perfil */}
+      {showPerfil && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setShowPerfil(false)}>
+          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
+              <span className="font-semibold text-sm">Mi perfil</span>
+              <button onClick={() => setShowPerfil(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
+            </div>
+            <div className="p-5 space-y-6">
+              <div className="flex items-center gap-3 pb-4 border-b border-[#e5ddd2]">
+                <div className="w-12 h-12 rounded-full bg-[#111] text-white flex items-center justify-center text-lg font-medium shrink-0">
+                  {usuarioNombre[0]}
+                </div>
+                <div>
+                  <p className="text-base font-medium">{usuarioNombre}</p>
+                  <p className="text-xs text-[#888]">{currentUser.celular || ''}</p>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#888] font-medium">Nombre</label>
+                <Input value={editNombre} onChange={e => setEditNombre(e.target.value)}
+                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#888] font-medium">Fecha de nacimiento</label>
+                <Input type="date" value={editFecha} onChange={e => setEditFecha(e.target.value)}
+                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+              </div>
+              <Separator className="bg-[#e5ddd2]" />
+              <p className="text-xs font-medium text-[#888] uppercase tracking-wider">Cambiar contraseña</p>
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#888] font-medium">Contraseña actual</label>
+                <Input type="password" value={passwordActual} onChange={e => setPasswordActual(e.target.value)}
+                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-[#888] font-medium">Nueva contraseña</label>
+                <Input type="password" placeholder="Mínimo 6 caracteres" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+              </div>
+              {perfilMsg && <p className="text-green-600 text-xs bg-green-50 border border-green-100 rounded-md px-3 py-2">{perfilMsg}</p>}
+              {perfilError && <p className="text-red-500 text-xs bg-red-50 border border-red-100 rounded-md px-3 py-2">{perfilError}</p>}
+              <button onClick={guardarPerfil}
+                className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md font-medium">
+                Guardar cambios
+              </button>
+              <button onClick={() => { localStorage.clear(); navigate('/login') }}
+                className="w-full h-10 text-sm border border-[#e5ddd2] text-[#888] hover:text-red-500 hover:border-red-200 rounded-md flex items-center justify-center gap-2 transition">
+                <LogOut className="w-3.5 h-3.5" /> Cerrar sesión
+              </button>
+            </div>
           </div>
         </div>
       )}

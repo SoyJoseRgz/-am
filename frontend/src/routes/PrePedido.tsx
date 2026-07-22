@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../stores/CartContext'
 import { api, getCurrentUser } from '../services/api'
+import { Minus, Plus, Trash2 } from 'lucide-react'
 
 export default function PrePedido(props?: { restauranteId?: string; mesaId?: string; onSuccess?: (pedidoId: number) => void; onClose?: () => void }) {
   const params = useParams()
@@ -20,10 +21,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
 
   useEffect(() => {
     api<{ iva_porcentaje: number; iva_incluido: boolean }>(`/api/restaurantes/${restauranteId}/menu`)
-      .then(d => {
-        setIvaPct(d.iva_porcentaje)
-        setIvaIncluido(d.iva_incluido)
-      })
+      .then(d => { setIvaPct(d.iva_porcentaje); setIvaIncluido(d.iva_incluido) })
       .catch(() => {})
   }, [restauranteId])
 
@@ -49,145 +47,110 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
           }))
         ),
       }
-      const pedido = await api<any>('/api/pedidos', {
-        method: 'POST',
-        body: JSON.stringify(body),
-      })
+      const pedido = await api<any>('/api/pedidos', { method: 'POST', body: JSON.stringify(body) })
       clearCart()
       setSuccess(pedido.id)
     } catch (e: any) {
       setError(e.message || 'Error al crear pedido')
-    } finally {
-      setSubmitting(false)
-    }
+    } finally { setSubmitting(false) }
   }
 
   if (success) {
-    if (props?.onSuccess) {
-      props.onSuccess(success)
-      return null
-    }
+    if (props?.onSuccess) { props.onSuccess(success); return null }
     navigate(`/m/${restauranteId}/${mesaId}/pedido`, { replace: true })
     return null
   }
 
   return (
-    <div className="min-h-screen bg-white text-black">
-      <div className="max-w-md mx-auto p-4 space-y-6">
-        <div className="flex items-center justify-between">
-          <button onClick={() => { if (props?.onClose) props.onClose(); else navigate(-1) }} className="text-gray-400 hover:text-black text-sm">← Volver</button>
-          <h1 className="text-lg font-bold">Pre-pedido</h1>
-          <div />
+    <div className="space-y-4">
+      {items.length === 0 ? (
+        <div className="text-center py-12 space-y-4">
+          <p className="text-[#888] text-sm">No hay items en el carrito</p>
+          <button onClick={() => { if (props?.onClose) props.onClose() }}
+            className="bg-[#111] hover:bg-[#000] text-white px-6 py-2 rounded-md text-sm">Ver menú</button>
         </div>
-
-        {items.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400 mb-4">No hay items en el carrito</p>
-            <button
-              onClick={() => { if (props?.onClose) props.onClose(); else navigate(`/m/${restauranteId}/${mesaId}`) }}
-              className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-md text-sm"
-            >
-              Ver menú
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-6">
-              {itemsPorComensal.map(grupo => (
-                <div key={grupo.usuarioId} className="bg-gray-50 border border-gray-200 rounded-md p-3">
-                  <h3 className="font-semibold text-sm text-gray-500 mb-3 flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-black text-white flex items-center justify-center text-xs font-bold">
-                      {grupo.usuarioNombre[0]}
-                    </span>
-                    {grupo.usuarioNombre}
-                  </h3>
-                  <div className="space-y-2">
-                    {grupo.items.map((item, i) => {
-                      const idx = items.findIndex(it =>
-                        it.platilloId === item.platilloId &&
-                        it.usuarioId === item.usuarioId &&
-                        JSON.stringify(it.modificadores) === JSON.stringify(item.modificadores) &&
-                        it.notas === item.notas
-                      )
-                      const itemTotal = (item.precioUnitario + item.modificadores.reduce((s, m) => s + m.precio, 0)) * item.cantidad
-                      return (
-                        <div key={`${grupo.usuarioId}-${i}`} className="bg-white border border-gray-200 rounded-md p-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-semibold text-sm">{item.nombre}</p>
-                              {item.modificadores.length > 0 && (
-                                <p className="text-gray-400 text-xs mt-0.5">
-                                  {item.modificadores.map(m => m.nombre).join(', ')}
-                                </p>
-                              )}
-                              {item.notas && (
-                                <p className="text-gray-400 text-xs italic mt-0.5">📝 {item.notas}</p>
-                              )}
+      ) : (
+        <>
+          <div className="space-y-4">
+            {itemsPorComensal.map(grupo => (
+              <div key={grupo.usuarioId}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {grupo.usuarioNombre[0]}
+                  </span>
+                  <span className="text-xs font-medium text-[#888] uppercase tracking-wider">{grupo.usuarioNombre}</span>
+                </div>
+                <div className="space-y-2">
+                  {grupo.items.map((item, i) => {
+                    const idx = items.findIndex(it =>
+                      it.platilloId === item.platilloId && it.usuarioId === item.usuarioId &&
+                      JSON.stringify(it.modificadores) === JSON.stringify(item.modificadores) && it.notas === item.notas
+                    )
+                    const itemTotal = (item.precioUnitario + item.modificadores.reduce((s, m) => s + m.precio, 0)) * item.cantidad
+                    return (
+                      <div key={`${grupo.usuarioId}-${i}`} className="bg-white border border-[#e5ddd2] rounded-lg p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">{item.cantidad}x</span>
+                              <p className="font-semibold text-sm truncate">{item.nombre}</p>
                             </div>
-                            <p className="font-bold text-sm">${itemTotal.toFixed(2)}</p>
+                            {item.modificadores.length > 0 && (
+                              <p className="text-[#888] text-xs mt-0.5 ml-6">{item.modificadores.map(m => m.nombre).join(', ')}</p>
+                            )}
+                            {item.notas && <p className="text-[#aaa] text-xs italic mt-0.5 ml-6">📝 {item.notas}</p>}
                           </div>
-                          {grupo.usuarioId === usuarioId && (
-                            <div className="flex items-center gap-3 mt-2">
-                              <div className="flex items-center border border-gray-200 rounded-md">
-                                <button
-                                  onClick={() => updateCantidad(idx, -1)}
-                                  className="px-2 py-1 text-sm hover:bg-gray-50"
-                                >
-                                  −
-                                </button>
-                                <span className="px-3 text-sm font-medium">{item.cantidad}</span>
-                                <button
-                                  onClick={() => updateCantidad(idx, 1)}
-                                  className="px-2 py-1 text-sm hover:bg-gray-50"
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <button
-                                onClick={() => removeItem(idx)}
-                                className="text-xs text-red-500 hover:text-red-700 ml-auto"
-                              >
-                                Eliminar
+                          <p className="font-semibold text-sm shrink-0">${itemTotal.toFixed(2)}</p>
+                        </div>
+                        {grupo.usuarioId === usuarioId && (
+                          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-[#e5ddd2]">
+                            <div className="flex items-center border border-[#e5ddd2] rounded-md overflow-hidden">
+                              <button onClick={() => updateCantidad(idx, -1)} className="w-7 h-7 flex items-center justify-center hover:bg-[#faf6f2] transition-colors">
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="w-8 text-xs font-semibold text-center">{item.cantidad}</span>
+                              <button onClick={() => updateCantidad(idx, 1)} className="w-7 h-7 flex items-center justify-center hover:bg-[#faf6f2] transition-colors">
+                                <Plus className="w-3 h-3" />
                               </button>
                             </div>
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+                            <button onClick={() => removeItem(idx)} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 transition-colors">
+                              <Trash2 className="w-3 h-3" /> Quitar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
-
-            <div className="border-t border-gray-200 pt-4 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
               </div>
-              {!ivaIncluido && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">IVA ({ivaPct}%)</span>
-                  <span>${ivaMonto.toFixed(2)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-2">
-                <span>Total</span>
-                <span>${total.toFixed(2)}</span>
-              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-[#e5ddd2] pt-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#888]">Subtotal</span>
+              <span className="font-medium">${subtotal.toFixed(2)}</span>
             </div>
+            {!ivaIncluido && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#888]">IVA ({ivaPct}%)</span>
+                <span className="font-medium">${ivaMonto.toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between text-base font-bold border-t border-[#e5ddd2] pt-3">
+              <span>Total</span>
+              <span>${total.toFixed(2)}</span>
+            </div>
+          </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-red-500 text-xs bg-red-50 border border-red-100 rounded-md px-3 py-2">{error}</p>}
 
-            <button
-              onClick={handleConfirm}
-              disabled={submitting}
-              className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 py-3 rounded-md font-semibold transition text-white"
-            >
-              {submitting ? 'Enviando...' : 'Confirmar pedido'}
-            </button>
-          </>
-        )}
-      </div>
+          <button onClick={handleConfirm} disabled={submitting}
+            className="w-full h-12 text-sm bg-[#111] hover:bg-[#000] disabled:bg-[#e5ddd2] disabled:text-[#aaa] text-white rounded-lg font-semibold transition flex items-center justify-center gap-2">
+            {submitting ? 'Enviando pedido…' : `Confirmar pedido — $${total.toFixed(2)}`}
+          </button>
+        </>
+      )}
     </div>
   )
 }
