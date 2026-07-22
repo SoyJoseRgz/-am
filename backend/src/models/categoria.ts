@@ -27,7 +27,7 @@ export async function create(data: { restaurante_id: number; nombre: string; ico
   return r.rows[0]
 }
 
-export async function update(id: number, data: { nombre?: string; icono?: string; orden?: number }) {
+export async function update(restauranteId: number, id: number, data: { nombre?: string; icono?: string; orden?: number }) {
   const sets: string[] = []
   const vals: any[] = []
   let i = 1
@@ -35,11 +35,11 @@ export async function update(id: number, data: { nombre?: string; icono?: string
   if (data.icono !== undefined) { sets.push(`icono=$${i++}`); vals.push(data.icono) }
   if (data.orden !== undefined) { sets.push(`orden=$${i++}`); vals.push(data.orden) }
   if (sets.length === 0) return null
-  vals.push(id)
-  const r = await pool.query<Categoria>(`UPDATE categorias SET ${sets.join(',')} WHERE id=$${i} RETURNING *`, vals)
+  vals.push(id, restauranteId)
+  const r = await pool.query<Categoria>(`UPDATE categorias SET ${sets.join(',')} WHERE id=$${i} AND restaurante_id=$${i+1} RETURNING *`, vals)
   return r.rows[0] || null
 }
 
-export async function remove(id: number) {
-  await pool.query('DELETE FROM categorias WHERE id = $1', [id])
+export async function remove(restauranteId: number, id: number) {
+  await pool.query('DELETE FROM categorias WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
 }

@@ -190,7 +190,12 @@ export default function Mesero() {
                   <button onClick={() => { setTomarPedido(sel); setSel(null) }} className="w-full bg-black text-white py-2 rounded-md text-sm">
                     Tomar pedido
                   </button>
-                  <button onClick={() => { api<CuentaData>('/api/mesero/mesas/' + sel.id + '/cuenta').then(d => { setCuenta(d); setCuentaMesa(sel); setSplit('individual'); setTip(0); setYoInvitaIdx(0); setSel(null) }) }} className="w-full border border-black text-black py-2 rounded-md text-sm">
+                  <button onClick={() => {
+                    const last = llamados.find(l => l.mesa_id === sel.id && l.tipo === 'cuenta')
+                    let ps = 'individual'; let pt = 0
+                    if (last?.mensaje?.includes('|||')) try { const p = JSON.parse(last.mensaje.split('|||')[1]); ps = p.split || 'individual'; pt = p.tip || 0 } catch {}
+                    api<CuentaData>('/api/mesero/mesas/' + sel.id + '/cuenta').then(d => { setCuenta(d); setCuentaMesa(sel); setSplit(ps as any); setTip(pt); setYoInvitaIdx(0); setSel(null) })
+                  }} className="w-full border border-black text-black py-2 rounded-md text-sm">
                     Ver cuenta
                   </button>
                   <button onClick={() => cambiarEstado(sel.id, 'limpiando')} className="w-full border border-black text-black py-2 rounded-md text-sm">

@@ -36,21 +36,21 @@ export async function create(data: {
   }
 }
 
-export async function update(id: number, data: { nombre?: string; rol?: string }) {
+export async function update(restauranteId: number, id: number, data: { nombre?: string; rol?: string }) {
   const sets: string[] = []
   const vals: any[] = []
   let i = 1
   if (data.nombre !== undefined) { sets.push(`nombre=$${i++}`); vals.push(data.nombre) }
   if (data.rol !== undefined) { sets.push(`rol=$${i++}`); vals.push(data.rol) }
   if (sets.length === 0) return null
-  vals.push(id)
+  vals.push(id, restauranteId)
   const r = await pool.query<Staff>(
-    `UPDATE usuarios SET ${sets.join(',')} WHERE id=$${i} RETURNING id, restaurante_id, nombre, celular, rol, created_at`,
+    `UPDATE usuarios SET ${sets.join(',')} WHERE id=$${i} AND restaurante_id=$${i+1} RETURNING id, restaurante_id, nombre, celular, rol, created_at`,
     vals,
   )
   return r.rows[0] || null
 }
 
-export async function remove(id: number) {
-  await pool.query('UPDATE usuarios SET activo = false WHERE id = $1', [id])
+export async function remove(restauranteId: number, id: number) {
+  await pool.query('UPDATE usuarios SET activo = false WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
 }

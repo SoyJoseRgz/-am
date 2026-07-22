@@ -91,7 +91,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
   const groups: Record<number, { nombre: string; items: ItemData[]; subtotal: number }> = {}
   for (const item of itemsDelDia) {
-    const uid = item.usuario_id
+    const uid = item.usuario_id || 0
     if (!groups[uid]) groups[uid] = { nombre: item.comensal_nombre || 'Comensal', items: [], subtotal: 0 }
     groups[uid].items.push(item)
     groups[uid].subtotal += Number(item.precio_unitario) * item.cantidad
@@ -143,7 +143,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
           <div className="text-center py-12">
             <p className="text-gray-400 mb-4">No hay pedidos activos</p>
             <button
-              onClick={() => { if (props?.onSumarMas) props.onSumarMas(); else navigate(`/m/${restauranteId}/${mesaId}`, { state: { openMenu: true } }) }}
+              onClick={() => { if (props?.onSumarMas) props.onSumarMas(); else navigate(`/m/${restauranteId}/${mesaId}?v=menu`) }}
               className="bg-black hover:bg-gray-800 text-white px-6 py-2 rounded-md text-sm"
             >
               Ver menú
@@ -208,7 +208,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             )}
 
             <button
-              onClick={() => { if (props?.onSumarMas) props.onSumarMas(); else navigate(`/m/${restauranteId}/${mesaId}`, { state: { openMenu: true } }) }}
+              onClick={() => { if (props?.onSumarMas) props.onSumarMas(); else navigate(`/m/${restauranteId}/${mesaId}?v=menu`) }}
               className="w-full bg-black hover:bg-gray-800 text-white py-3 rounded-md font-semibold transition"
             >
               Sumar más

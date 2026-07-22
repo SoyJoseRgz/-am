@@ -22,4 +22,12 @@ export function connectToRestaurante(restauranteId: number) {
   }
 }
 
+export function leaveMesa(restauranteId: number, mesaId: number) {
+  socket.emit('leave:mesa', { restauranteId, mesaId })
+}
+
+export function leaveRestaurante(restauranteId: number) {
+  socket.emit('leave:restaurante', restauranteId)
+}
+
 export { socket }

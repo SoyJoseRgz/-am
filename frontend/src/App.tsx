@@ -1,8 +1,6 @@
 import { Routes, Route, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Mesa from './routes/Mesa'
-import PrePedido from './routes/PrePedido'
-import PedidoActivo from './routes/PedidoActivo'
 import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
 import AdminDashboard from './routes/admin/Dashboard'
@@ -13,7 +11,6 @@ import AdminPedidos from './routes/admin/Pedidos'
 import Mesero from './routes/Mesero'
 import Super from './routes/Super'
 import ForcePasswordChange from './routes/ForcePasswordChange'
-import { CartProvider } from './stores/CartContext'
 import QRScanner from './components/QRScanner'
 
 function Home() {
@@ -195,8 +192,6 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/m/:restauranteId/:mesaId" element={<Mesa />} />
-      <Route path="/m/:restauranteId/:mesaId/prepedido" element={<CartProvider><PrePedido /></CartProvider>} />
-      <Route path="/m/:restauranteId/:mesaId/pedido" element={<PedidoActivo />} />
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="menu" element={<AdminMenu />} />

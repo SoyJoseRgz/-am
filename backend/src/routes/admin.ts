@@ -30,21 +30,23 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   app.put('/api/admin/categorias/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const updated = await Categoria.update(Number(id), request.body as any)
+    const rid = request.user!.restauranteId!
+    const updated = await Categoria.update(rid, Number(id), request.body as any)
     if (!updated) return reply.status(404).send({ error: 'No encontrada' })
     return updated
   })
 
   app.delete('/api/admin/categorias/:id', async (request) => {
     const { id } = request.params as { id: string }
-    await Categoria.remove(Number(id))
+    await Categoria.remove(request.user!.restauranteId!, Number(id))
     return { success: true }
   })
 
   app.patch('/api/admin/categorias/reorder', async (request) => {
     const { ids } = request.body as { ids: number[] }
+    const rid = request.user!.restauranteId!
     for (let i = 0; i < ids.length; i++) {
-      await Categoria.update(ids[i], { orden: i })
+      await Categoria.update(rid, ids[i], { orden: i })
     }
     return { success: true }
   })
@@ -60,20 +62,21 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   app.put('/api/admin/platillos/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const updated = await Platillo.update(Number(id), request.body as any)
+    const rid = request.user!.restauranteId!
+    const updated = await Platillo.update(rid, Number(id), request.body as any)
     if (!updated) return reply.status(404).send({ error: 'No encontrado' })
     return updated
   })
 
   app.delete('/api/admin/platillos/:id', async (request) => {
     const { id } = request.params as { id: string }
-    await Platillo.remove(Number(id))
+    await Platillo.remove(request.user!.restauranteId!, Number(id))
     return { success: true }
   })
 
   app.post('/api/admin/platillos/:id/duplicate', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const dup = await Platillo.duplicate(Number(id))
+    const dup = await Platillo.duplicate(request.user!.restauranteId!, Number(id))
     if (!dup) return reply.status(404).send({ error: 'No encontrado' })
     return dup
   })
@@ -101,7 +104,7 @@ export default async function adminRoutes(app: FastifyInstance) {
     await sharp(buffer).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 85 }).toFile(dest)
 
     const fotoUrl = `/fotos/${restauranteId}/${platilloId}.webp`
-    const updated = await Platillo.updateFoto(platilloId, fotoUrl)
+    const updated = await Platillo.updateFoto(restauranteId, platilloId, fotoUrl)
     return updated
   })
 
@@ -117,14 +120,15 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   app.put('/api/admin/modificadores/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const updated = await Modificador.update(Number(id), request.body as any)
+    const rid = request.user!.restauranteId!
+    const updated = await Modificador.update(rid, Number(id), request.body as any)
     if (!updated) return reply.status(404).send({ error: 'No encontrado' })
     return updated
   })
 
   app.delete('/api/admin/modificadores/:id', async (request) => {
     const { id } = request.params as { id: string }
-    await Modificador.remove(Number(id))
+    await Modificador.remove(request.user!.restauranteId!, Number(id))
     return { success: true }
   })
 
@@ -139,14 +143,15 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   app.put('/api/admin/mesas/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const updated = await Mesa.update(Number(id), request.body as any)
+    const rid = request.user!.restauranteId!
+    const updated = await Mesa.update(rid, Number(id), request.body as any)
     if (!updated) return reply.status(404).send({ error: 'No encontrada' })
     return updated
   })
 
   app.delete('/api/admin/mesas/:id', async (request) => {
     const { id } = request.params as { id: string }
-    await Mesa.remove(Number(id))
+    await Mesa.remove(request.user!.restauranteId!, Number(id))
     return { success: true }
   })
 
@@ -183,14 +188,15 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   app.put('/api/admin/staff/:id', async (request, reply) => {
     const { id } = request.params as { id: string }
-    const updated = await Staff.update(Number(id), request.body as any)
+    const rid = request.user!.restauranteId!
+    const updated = await Staff.update(rid, Number(id), request.body as any)
     if (!updated) return reply.status(404).send({ error: 'No encontrado' })
     return updated
   })
 
   app.delete('/api/admin/staff/:id', async (request) => {
     const { id } = request.params as { id: string }
-    await Staff.remove(Number(id))
+    await Staff.remove(request.user!.restauranteId!, Number(id))
     return { success: true }
   })
 }

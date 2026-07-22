@@ -218,6 +218,16 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - **Fix SQL type inference** (`models/pedido.ts`): `CONCAT(..., $3)` → `|| $3` para que PostgreSQL infiera correctamente el tipo text de `$3`.
 - **Migration 014** (`migrations/014-cancelado-estado.ts`): agrega valor `'cancelado'` al enum `estado_item_enum`.
 - **Dead code cleanup**: eliminados `shared/` y `database/` directorios, `zustand`, `ioredis`, `zod` de package.json, `@shared` alias de vite.config, exports no usados (`apiUrl`, `leaveMesa`, `refreshToken`, `ModSeleccionado`, `CartItem`).
+- **Cuenta con split en PedidoActivo** (`PedidoActivo.tsx`): resumen con subtotal por persona, IVA, propina (0/10/15/20%) y total. Botones de split (Individual/Iguales/Yo invito). Solo visible cuando hay 2+ comensales. IVA no se desglosa si está incluido. Botón "Pedir cuenta — $X" envía preferencia de split+tip al mesero.
+- **Back button atrapado en mesa** (`Mesa.tsx`): `pushState`+`popstate` trap impide que back button saque al comensal de la mesa. Overlays usan `useSearchParams` (`?v=menu|prepedido|pedido`) — back button cierra overlay, no sale de la mesa.
+- **Cuenta cerrada no borra auth** (`Mesa.tsx`): `localStorage.clear()` reemplazado por `limpiarCarrito()` que solo remueve keys `cart_*`. Tokens de sesión sobreviven.
+- **Socket leave en cleanup** (`Mesa.tsx`, `socket.ts`): export `leaveMesa`/`leaveRestaurante`, emitido al desmontar Mesa. Sin listeners colgados.
+- **Multi-tenancy en models** (`models/{categoria,platillo,modificador,staff,mesa}.ts`): todas las funciones `update()` y `remove()` ahora reciben `restaurante_id` y filtran en WHERE. Admin.ts pasa `restauranteId` del usuario autenticado.
+- **Llamados security** (`routes/llamados.ts`): POST deriva `restaurante_id` de la mesa (no confía en body). GET y PUT requieren rol `mesero/admin/super_admin` y verifican `restaurante_id`.
+- **Preferencia split/tip en Mesero** (`Mesero.tsx`): al abrir "Ver cuenta", busca el último llamado tipo `cuenta` de la mesa y pre-selecciona split + propina.
+- **Rutas standalone eliminadas** (`App.tsx`): `/m/:rid/:mid/prepedido` y `/m/:rid/:mid/pedido` eliminadas. Solo existen como overlays dentro de Mesa.
+- **Bug usuario_id null** (`PedidoActivo.tsx`): `|| 0` en groupBy para items creados por mesero.
+- **Duplicado en MeseroKanban** (`MeseroKanban.tsx`): eliminado `connectToRestaurante` duplicado.
 
 ### Cambios recientes (21/Jul/2026)
 - **Ticket 09 — Mesero panel**: Backend `routes/mesero.ts` con `GET /api/mesero/mesas`, `PUT .../estado`, unir/separar. Frontend `routes/Mesero.tsx` con semáforo de mesas coloreadas por estado, detalle en bottom sheet con acciones (ocupar, cobrar→limpiando, unir, separar, marcar libre), y sección de llamados activos con botón "Atender". Socket en vivo para cambios de estado y llamados. Ruta `/dashboard`.
@@ -241,9 +251,7 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 ### Frontend rutas activas
 - `/` — Landing page (QR scanner + login o mesa demo)
 - `/login` — Login/Registro toggle (celular+contraseña)
-- `/m/:restauranteId/:mesaId` — Mesa + código invitación + comensales + overlays de menú/pre-pedido/pedido
-- `/m/:restauranteId/:mesaId/prepedido` — Pre-pedido (fallback directo)
-- `/m/:restauranteId/:mesaId/pedido` — Pedido activo (fallback directo)
+- `/m/:restauranteId/:mesaId` — Mesa + código invitación + comensales + overlays de menú/pre-pedido/pedido (`?v=menu|prepedido|pedido`)
 - `/admin/menu` — Admin: CRUD unificado (categorías + platillos + modificadores + foto + search)
 - `/admin/mesas` — Admin: CRUD mesas + QR descargable
 - `/admin/pedidos` — Admin: historial de pedidos + stats + items cancelados
@@ -263,9 +271,9 @@ Flujo: diseño claro? → ponytail. Diseño turbio? → grill-me → ponytail. U
 - `GET /api/pedidos/mesa/:mesaId` — Pedidos activos de una mesa
 - `GET /api/cocina/pedidos` — Pedidos activos (cocina)
 - `PUT /api/cocina/pedidos/:id/items/:itemId` — Avanzar estado de item
-- `POST /api/llamados/mesa/:mesaId` — Llamar mesero
-- `GET /api/llamados/restaurante/:restauranteId` — Llamados activos
-- `PUT /api/llamados/:id/atender` — Atender llamado
+- `POST /api/llamados/mesa/:mesaId` — Llamar mesero (restaurante_id derivado de la mesa, no del body)
+- `GET /api/llamados/restaurante/:restauranteId` — Llamados activos (requiere mesero/admin/super_admin)
+- `PUT /api/llamados/:id/atender` — Atender llamado (requiere mesero/admin/super_admin, verifica restaurante_id)
 - `GET|POST|PUT|DELETE /api/admin/categorias[/:id]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/platillos[/:id][/duplicate|/foto]` — CRUD admin
 - `GET|POST|PUT|DELETE /api/admin/modificadores[/:id]` — CRUD admin

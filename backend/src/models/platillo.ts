@@ -39,7 +39,7 @@ export async function create(data: {
   return r.rows[0]
 }
 
-export async function update(id: number, data: Partial<{
+export async function update(restauranteId: number, id: number, data: Partial<{
   categoria_id: number; nombre: string; descripcion: string; precio: number
   foto_url: string; tiempo_preparacion: number; activo: boolean; agotado: boolean
 }>) {
@@ -50,27 +50,27 @@ export async function update(id: number, data: Partial<{
     if (v !== undefined) { sets.push(`${k}=$${i++}`); vals.push(v) }
   }
   if (sets.length === 0) return null
-  vals.push(id)
-  const r = await pool.query<Platillo>(`UPDATE platillos SET ${sets.join(',')} WHERE id=$${i} RETURNING *`, vals)
+  vals.push(id, restauranteId)
+  const r = await pool.query<Platillo>(`UPDATE platillos SET ${sets.join(',')} WHERE id=$${i} AND restaurante_id=$${i+1} RETURNING *`, vals)
   return r.rows[0] || null
 }
 
-export async function remove(id: number) {
-  await pool.query('UPDATE platillos SET activo = false WHERE id = $1', [id])
+export async function remove(restauranteId: number, id: number) {
+  await pool.query('UPDATE platillos SET activo = false WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
 }
 
-export async function duplicate(id: number) {
-  const orig = await findById(id)
-  if (!orig) return null
+export async function duplicate(restauranteId: number, id: number) {
+  const orig = await pool.query<Platillo>('SELECT * FROM platillos WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
+  if (!orig.rows[0]) return null
   const r = await pool.query<Platillo>(
      `INSERT INTO platillos (restaurante_id, categoria_id, nombre, descripcion, precio, foto_url, tiempo_preparacion)
      VALUES ($1,$2,$3||' (copia)',$4,$5,$6,$7) RETURNING *`,
-    [orig.restaurante_id, orig.categoria_id, orig.nombre, orig.descripcion, orig.precio, orig.foto_url, orig.tiempo_preparacion],
+    [orig.rows[0].restaurante_id, orig.rows[0].categoria_id, orig.rows[0].nombre, orig.rows[0].descripcion, orig.rows[0].precio, orig.rows[0].foto_url, orig.rows[0].tiempo_preparacion],
   )
   return r.rows[0]
 }
 
-export async function updateFoto(id: number, fotoUrl: string) {
-  const r = await pool.query<Platillo>('UPDATE platillos SET foto_url = $1 WHERE id = $2 RETURNING *', [fotoUrl, id])
+export async function updateFoto(restauranteId: number, id: number, fotoUrl: string) {
+  const r = await pool.query<Platillo>('UPDATE platillos SET foto_url = $1 WHERE id = $2 AND restaurante_id = $3 RETURNING *', [fotoUrl, id, restauranteId])
   return r.rows[0] || null
 }

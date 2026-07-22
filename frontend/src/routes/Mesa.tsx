@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, getCurrentUser } from '../services/api'
-import { connectToMesa, socket } from '../services/socket'
+import { connectToMesa, leaveMesa, socket } from '../services/socket'
 import { MESA_ESTADO_LABEL } from '../constants/estados'
 import { CartProvider, useCart } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
@@ -121,12 +121,17 @@ function MesaInner() {
       socket.off('pedido:creado')
       socket.off('item:actualizado')
       socket.off('mesa:estado')
+      leaveMesa(Number(restauranteId), Number(mesaId))
     }
   }, [join, mesaId, restauranteId])
 
+  function limpiarCarrito() {
+    Object.keys(localStorage).filter(k => k.startsWith('cart_')).forEach(k => localStorage.removeItem(k))
+  }
+
   useEffect(() => {
     if (cuentaCerrada) {
-      const t = setTimeout(() => { localStorage.clear(); navigate('/') }, 5000)
+      const t = setTimeout(() => { limpiarCarrito(); navigate('/') }, 5000)
       return () => clearTimeout(t)
     }
   }, [cuentaCerrada, navigate])
@@ -191,7 +196,7 @@ function MesaInner() {
         <p className="text-2xl">🧾</p>
         <h2 className="text-xl font-bold">Cuenta cerrada</h2>
         <p className="text-gray-500">Gracias por tu visita. Serás redirigido en unos segundos.</p>
-        <button onClick={() => { localStorage.clear(); navigate('/') }} className="bg-black text-white px-6 py-2 rounded-md text-sm">
+        <button onClick={() => { limpiarCarrito(); navigate('/') }} className="bg-black text-white px-6 py-2 rounded-md text-sm">
           Salir ahora
         </button>
       </div>

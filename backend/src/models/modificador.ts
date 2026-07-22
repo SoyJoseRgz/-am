@@ -32,7 +32,7 @@ export async function create(data: {
   return r.rows[0]
 }
 
-export async function update(id: number, data: Partial<{
+export async function update(restauranteId: number, id: number, data: Partial<{
   nombre_grupo: string; nombre_opcion: string; precio: number; max_seleccion: number
 }>) {
   const sets: string[] = []
@@ -42,11 +42,11 @@ export async function update(id: number, data: Partial<{
     if (v !== undefined) { sets.push(`${k}=$${i++}`); vals.push(v) }
   }
   if (sets.length === 0) return null
-  vals.push(id)
-  const r = await pool.query<Modificador>(`UPDATE modificadores SET ${sets.join(',')} WHERE id=$${i} RETURNING *`, vals)
+  vals.push(id, restauranteId)
+  const r = await pool.query<Modificador>(`UPDATE modificadores SET ${sets.join(',')} WHERE id=$${i} AND restaurante_id=$${i+1} RETURNING *`, vals)
   return r.rows[0] || null
 }
 
-export async function remove(id: number) {
-  await pool.query('DELETE FROM modificadores WHERE id = $1', [id])
+export async function remove(restauranteId: number, id: number) {
+  await pool.query('DELETE FROM modificadores WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
 }
