@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react'
+import { getCurrentUser } from '../services/api'
 
 interface ModSeleccionado {
   id: number
@@ -36,7 +37,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null)
 
 function storageKey(suffix?: string) {
-  const uid = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}').id } catch { return 0 } })()
+  const uid = getCurrentUser().id || 0
   return suffix ? `cart_${suffix}` : `cart_items_${uid}`
 }
 

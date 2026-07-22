@@ -1,6 +1,10 @@
 const BASE = ''
 let refreshing: Promise<boolean> | null = null
 
+export function getCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
+}
+
 export async function api<T = any>(path: string, options: RequestInit = {}) {
   return doFetch<T>(path, options)
 }

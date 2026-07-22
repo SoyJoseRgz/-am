@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
+import { ITEM_ESTADO_LABEL, ITEM_ESTADO_COLOR, ITEM_ESTADO_BORDER, ESTADOS_ITEM as ESTADOS } from '../constants/estados'
 
 interface ItemData {
   id: number
@@ -25,29 +26,6 @@ interface PedidoData {
   created_at: string
   comensal_nombre: string
   items: ItemData[]
-}
-
-const ESTADOS = ['pendiente', 'preparando', 'listo', 'entregado'] as const
-
-const estadoLabel: Record<string, string> = {
-  pendiente: 'Pendiente',
-  preparando: 'Preparando',
-  listo: 'Listo',
-  entregado: 'Entregado',
-}
-
-const estadoColor: Record<string, string> = {
-  pendiente: 'text-yellow-600',
-  preparando: 'text-blue-600',
-  listo: 'text-green-600',
-  entregado: 'text-gray-400',
-}
-
-const estadoBorder: Record<string, string> = {
-  pendiente: 'border-l-yellow-500',
-  preparando: 'border-l-blue-500',
-  listo: 'border-l-green-500',
-  entregado: 'border-l-gray-300',
 }
 
 export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onClose?: () => void; onSumarMas?: () => void }) {
@@ -87,7 +65,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     }
   }, [mesaId, restauranteId])
 
-  const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const user = getCurrentUser()
 
   const itemsDelDia = pedidos.flatMap(p => p.items)
 
@@ -150,12 +128,12 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               if (list.length === 0) return null
               return (
                 <div key={est}>
-                  <div className={`text-xs font-semibold mb-2 px-2 py-1 rounded-md inline-block ${estadoColor[est]} bg-gray-50`}>
-                    {estadoLabel[est]} ({list.length})
+                  <div className={`text-xs font-semibold mb-2 px-2 py-1 rounded-md inline-block ${ITEM_ESTADO_COLOR[est]} bg-gray-50`}>
+                    {ITEM_ESTADO_LABEL[est]} ({list.length})
                   </div>
                   <div className="space-y-2">
                     {list.map(item => (
-                      <div key={item.id} className={`bg-white border border-gray-200 rounded-md p-3 border-l-4 ${estadoBorder[est]}`}>
+                      <div key={item.id} className={`bg-white border border-gray-200 rounded-md p-3 border-l-4 ${ITEM_ESTADO_BORDER[est]}`}>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm">{item.nombre}</p>
@@ -182,8 +160,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                                 {cancelandoId === item.id ? '...' : 'Cancelar'}
                               </button>
                             )}
-                            <span className={`text-xs font-medium ${estadoColor[est]}`}>
-                              {estadoLabel[est]}
+                            <span className={`text-xs font-medium ${ITEM_ESTADO_COLOR[est]}`}>
+                              {ITEM_ESTADO_LABEL[est]}
                             </span>
                           </div>
                         </div>

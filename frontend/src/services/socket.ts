@@ -4,21 +4,21 @@ const socket = io('/', { autoConnect: false })
 
 export function connectToMesa(restauranteId: number, mesaId: number) {
   const doJoin = () => socket.emit('join:mesa', { restauranteId, mesaId })
+  socket.on('connect', doJoin)
   if (socket.connected) {
     doJoin()
   } else {
-    socket.once('connect', doJoin)
-    if (!socket.connected) socket.connect()
+    socket.connect()
   }
 }
 
 export function connectToRestaurante(restauranteId: number) {
   const doJoin = () => socket.emit('join:restaurante', restauranteId)
+  socket.on('connect', doJoin)
   if (socket.connected) {
     doJoin()
   } else {
-    socket.once('connect', doJoin)
-    if (!socket.connected) socket.connect()
+    socket.connect()
   }
 }
 

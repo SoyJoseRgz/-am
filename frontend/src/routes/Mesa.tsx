@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
+import { MESA_ESTADO_LABEL } from '../constants/estados'
 import { CartProvider, useCart } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 import PrePedido from './PrePedido'
@@ -38,6 +39,7 @@ function MesaInner() {
   const [llamarExito, setLlamarExito] = useState(false)
   const [showPrePedido, setShowPrePedido] = useState(false)
   const [showPedidoActivo, setShowPedidoActivo] = useState(false)
+  const [cuentaCerrada, setCuentaCerrada] = useState(false)
   const location = useLocation()
   const { items } = useCart()
 
@@ -47,7 +49,7 @@ function MesaInner() {
       window.history.replaceState({}, document.title)
     }
   }, [location.state])
-  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+  const currentUser = getCurrentUser()
   const usuarioId = currentUser.id || 0
   const usuarioNombre = currentUser.nombre || ''
 
@@ -103,13 +105,27 @@ function MesaInner() {
         .then(data => setTienePedido(Array.isArray(data) && data.length > 0))
         .catch(() => {})
     })
+    socket.on('mesa:estado', (d: any) => {
+      if (d.mesaId === Number(mesaId)) {
+        setMesa(prev => prev ? { ...prev, estado: d.estado } : prev)
+        if (d.estado === 'limpiando') setCuentaCerrada(true)
+      }
+    })
 
     return () => {
       socket.off('comensal:unido')
       socket.off('pedido:creado')
       socket.off('item:actualizado')
+      socket.off('mesa:estado')
     }
   }, [join, mesaId, restauranteId])
+
+  useEffect(() => {
+    if (cuentaCerrada) {
+      const t = setTimeout(() => { localStorage.clear(); navigate('/') }, 5000)
+      return () => clearTimeout(t)
+    }
+  }, [cuentaCerrada, navigate])
 
   useEffect(() => {
     if (!mesa) return
@@ -165,6 +181,19 @@ function MesaInner() {
     )
   }
 
+  if (cuentaCerrada) {
+    return (
+      <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4 text-center space-y-4">
+        <p className="text-2xl">🧾</p>
+        <h2 className="text-xl font-bold">Cuenta cerrada</h2>
+        <p className="text-gray-500">Gracias por tu visita. Serás redirigido en unos segundos.</p>
+        <button onClick={() => { localStorage.clear(); navigate('/') }} className="bg-black text-white px-6 py-2 rounded-md text-sm">
+          Salir ahora
+        </button>
+      </div>
+    )
+  }
+
   if (!mesa) return null
 
   return (
@@ -174,14 +203,16 @@ function MesaInner() {
           <div>
             <p className="text-sm text-gray-400">Hola, {usuarioNombre}</p>
             <h1 className="text-3xl font-bold">Mesa {mesa.numero}</h1>
-            <p className="text-gray-500 text-sm">{estadoLabel(mesa.estado)}</p>
+            <p className="text-gray-500 text-sm">{MESA_ESTADO_LABEL[mesa.estado] || mesa.estado}</p>
           </div>
-          <button
-            onClick={() => { localStorage.clear(); navigate('/login') }}
-            className="text-sm text-gray-400 hover:text-black"
-          >
-            Cerrar sesión
-          </button>
+          {mesa.estado === 'libre' && (
+            <button
+              onClick={() => { localStorage.clear(); navigate('/login') }}
+              className="text-sm text-gray-400 hover:text-black"
+            >
+              Cerrar sesión
+            </button>
+          )}
         </div>
 
         {codigoInvitacion && (
@@ -384,12 +415,4 @@ export default function Mesa() {
   )
 }
 
-function estadoLabel(estado: string) {
-  const map: Record<string, string> = {
-    libre: 'Libre',
-    ocupada: 'Ocupada',
-    unida: 'Unida',
-    limpiando: 'Limpiando',
-  }
-  return map[estado] || estado
-}
+

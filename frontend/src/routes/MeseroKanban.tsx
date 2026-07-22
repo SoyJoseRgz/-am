@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../services/api'
 import { connectToRestaurante, socket } from '../services/socket'
+import { ITEM_ESTADO_LABEL as ESTADO_LABEL, ITEM_ESTADO_BORDER as ESTADO_COLOR, ITEM_ESTADO_DOT as ESTADO_DOT, ITEM_ESTADO_BG as ESTADO_BG, ESTADOS_ITEM as ESTADOS } from '../constants/estados'
 
 interface ModInfo { id: number; nombre: string; precio: string }
 interface ItemInfo {
@@ -15,11 +16,6 @@ interface PedidoInfo {
   items: ItemInfo[]
 }
 
-const ESTADOS = ['pendiente', 'preparando', 'listo', 'entregado'] as const
-const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', preparando: 'Preparando', listo: 'Listo', entregado: 'Entregado' }
-const ESTADO_COLOR: Record<string, string> = { pendiente: 'border-l-yellow-500', preparando: 'border-l-blue-500', listo: 'border-l-green-500', entregado: 'border-l-gray-300' }
-const ESTADO_DOT: Record<string, string> = { pendiente: 'bg-yellow-400', preparando: 'bg-blue-400', listo: 'bg-green-400', entregado: 'bg-gray-300' }
-const ESTADO_BG: Record<string, string> = { pendiente: 'bg-yellow-100 text-yellow-800', preparando: 'bg-blue-100 text-blue-800', listo: 'bg-green-100 text-green-800', entregado: 'bg-gray-100 text-gray-500' }
 
 export default function MeseroKanban({ restauranteId, onClose }: { restauranteId: number; onClose: () => void }) {
   const [pedidos, setPedidos] = useState<PedidoInfo[]>([])
@@ -35,13 +31,11 @@ export default function MeseroKanban({ restauranteId, onClose }: { restauranteId
   useEffect(() => {
     cargar()
     connectToRestaurante(restauranteId)
-    const onConnect = () => socket.emit('join:restaurante', restauranteId)
-    socket.on('connect', onConnect)
+    connectToRestaurante(restauranteId)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
     return () => {
-      socket.off('connect', onConnect)
       socket.off('pedido:nuevo', h)
       socket.off('item:actualizado', h)
       socket.emit('leave:restaurante', restauranteId)

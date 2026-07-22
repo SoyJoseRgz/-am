@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 import { connectToRestaurante, socket } from '../services/socket'
+import { ITEM_ESTADO_LABEL as ESTADO_LABEL, ITEM_ESTADO_DOT as ESTADO_DOT, ITEM_ESTADO_BG as ESTADO_BG, ESTADOS_ITEM as ESTADOS } from '../constants/estados'
 
 interface ModInfo { id: number; nombre: string; precio: string }
 interface ItemInfo {
@@ -16,10 +17,6 @@ interface PedidoInfo {
   items: ItemInfo[]
 }
 
-const ESTADOS = ['pendiente', 'preparando', 'listo', 'entregado'] as const
-const ESTADO_LABEL: Record<string, string> = { pendiente: 'Pendiente', preparando: 'Preparando', listo: 'Listo', entregado: 'Entregado', cancelado: 'Cancelado' }
-const ESTADO_DOT: Record<string, string> = { pendiente: 'bg-yellow-400', preparando: 'bg-blue-400', listo: 'bg-green-400', entregado: 'bg-gray-300', cancelado: 'bg-red-400' }
-const ESTADO_BG: Record<string, string> = { pendiente: 'bg-yellow-100 text-yellow-800', preparando: 'bg-blue-100 text-blue-800', listo: 'bg-green-100 text-green-800', entregado: 'bg-gray-100 text-gray-500', cancelado: 'bg-red-100 text-red-800' }
 
 function ItemTimer({ created_at }: { created_at: string }) {
   const [now, setNow] = useState(Date.now())
@@ -44,21 +41,15 @@ export default function Cocina() {
 
   useEffect(() => {
     cargar()
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const user = getCurrentUser()
     const restauranteId = user.restaurante_id
     if (restauranteId) {
       connectToRestaurante(restauranteId)
     }
-    const onConnect = () => { if (restauranteId) socket.emit('join:restaurante', restauranteId) }
-    const onConnectError = (err: Error) => console.error('[Cocina] Socket connect error:', err.message)
-    socket.on('connect', onConnect)
-    socket.on('connect_error', onConnectError)
     const h = () => cargar()
     socket.on('pedido:nuevo', h)
     socket.on('item:actualizado', h)
     return () => {
-      socket.off('connect', onConnect)
-      socket.off('connect_error', onConnectError)
       socket.off('pedido:nuevo', h); socket.off('item:actualizado', h)
       if (restauranteId) socket.emit('leave:restaurante', restauranteId)
     }

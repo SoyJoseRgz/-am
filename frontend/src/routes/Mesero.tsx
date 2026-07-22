@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 import { connectToRestaurante, socket } from '../services/socket'
+import { MESA_ESTADO_LABEL } from '../constants/estados'
 import { CartProvider } from '../stores/CartContext'
 import MenuDigital from './MenuDigital'
 import PrePedido from './PrePedido'
@@ -17,15 +18,21 @@ interface Llamado {
   usuario_nombre: string; created_at: string
 }
 
-const ESTADO_LABEL: Record<string, string> = {
-  libre: 'Libre', ocupada: 'Ocupada', unida: 'Unida', limpiando: 'Limpiando',
-}
-
 const ESTADO_CLASS: Record<string, string> = {
   libre: 'bg-green-100 border-green-300 text-green-800',
   ocupada: 'bg-red-100 border-red-300 text-red-800',
   unida: 'bg-yellow-100 border-yellow-300 text-yellow-800',
   limpiando: 'bg-amber-100 border-amber-300 text-amber-800',
+}
+
+interface CuentaItem {
+  id: number; platillo_id: number; usuario_id: number | null; cantidad: number
+  precio_unitario: string; estado: string; notas: string | null
+  nombre: string; comensal_nombre: string | null
+}
+
+interface CuentaData {
+  items: CuentaItem[]; iva_porcentaje: number; iva_incluido: boolean; mesa_id: number
 }
 
 export default function Mesero() {
@@ -36,10 +43,15 @@ export default function Mesero() {
   const [unirId, setUnirId] = useState('')
   const [tomarPedido, setTomarPedido] = useState<MesaInfo | null>(null)
   const [verPedido, setVerPedido] = useState<MesaInfo | null>(null)
+  const [cuenta, setCuenta] = useState<CuentaData | null>(null)
+  const [cuentaMesa, setCuentaMesa] = useState<{ id: number; numero: number } | null>(null)
+  const [split, setSplit] = useState<'individual' | 'iguales' | 'yo_invito'>('individual')
+  const [yoInvitaIdx, setYoInvitaIdx] = useState(0)
+  const [tip, setTip] = useState(0)
   const [showPre, setShowPre] = useState(false)
   const [showPA, setShowPA] = useState(false)
   const [kanban, setKanban] = useState(false)
-  const user = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+  const user = getCurrentUser()
 
   useEffect(() => {
     if (!user.restaurante_id) return
@@ -131,7 +143,7 @@ export default function Mesero() {
                 className={`border-2 rounded-xl p-4 text-center transition hover:shadow-md ${ESTADO_CLASS[m.estado] || 'border-gray-200'}`}
               >
                 <p className="text-2xl font-bold">{m.numero}</p>
-                <p className="text-xs mt-1">{ESTADO_LABEL[m.estado] || m.estado}</p>
+                <p className="text-xs mt-1">{MESA_ESTADO_LABEL[m.estado] || m.estado}</p>
                 <p className="text-xs mt-1 opacity-60">{m.comensales} comensal{m.comensales !== 1 ? 'es' : ''}</p>
               </button>
             ))}
@@ -146,7 +158,7 @@ export default function Mesero() {
               <div className="flex items-center justify-between">
                 <h2 className="font-bold text-lg">Mesa {sel.numero}</h2>
                 <span className={`text-xs font-semibold px-3 py-1 rounded-full ${ESTADO_CLASS[sel.estado] || ''}`}>
-                  {ESTADO_LABEL[sel.estado] || sel.estado}
+                  {MESA_ESTADO_LABEL[sel.estado] || sel.estado}
                 </span>
               </div>
 
@@ -166,6 +178,9 @@ export default function Mesero() {
                   )}
                   <button onClick={() => { setTomarPedido(sel); setSel(null) }} className="w-full bg-black text-white py-2 rounded-md text-sm">
                     Tomar pedido
+                  </button>
+                  <button onClick={() => { api<CuentaData>('/api/mesero/mesas/' + sel.id + '/cuenta').then(d => { setCuenta(d); setCuentaMesa(sel); setSplit('individual'); setTip(0); setYoInvitaIdx(0); setSel(null) }) }} className="w-full border border-black text-black py-2 rounded-md text-sm">
+                    Ver cuenta
                   </button>
                   <button onClick={() => cambiarEstado(sel.id, 'limpiando')} className="w-full border border-black text-black py-2 rounded-md text-sm">
                     Cobrar y cerrar cuenta
@@ -236,6 +251,131 @@ export default function Mesero() {
                 />
               )}
             </CartProvider>
+          </div>
+        )}
+
+        {cuenta && cuentaMesa && (
+          <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
+              <span className="font-bold text-lg">Mesa {cuentaMesa.numero} — Cuenta</span>
+              <button onClick={() => { setCuenta(null); setCuentaMesa(null) }} className="text-gray-400 hover:text-black text-xl">✕</button>
+            </div>
+            <div className="max-w-lg mx-auto p-4 space-y-4">
+              {(() => {
+                const groups: Record<number, { nombre: string; items: CuentaItem[]; subtotal: number }> = {}
+                for (const item of cuenta.items) {
+                  const uid = item.usuario_id || 0
+                  if (!groups[uid]) groups[uid] = { nombre: item.comensal_nombre || 'Comensal', items: [], subtotal: 0 }
+                  groups[uid].items.push(item)
+                  groups[uid].subtotal += Number(item.precio_unitario) * item.cantidad
+                }
+                const personas = Object.values(groups)
+                const total = personas.reduce((s, p) => s + p.subtotal, 0)
+                const iva = cuenta.iva_incluido
+                  ? total - total / (1 + cuenta.iva_porcentaje / 100)
+                  : total * cuenta.iva_porcentaje / 100
+                const totalConIva = cuenta.iva_incluido ? total : total + iva
+                const tipAmount = totalConIva * tip / 100
+                const granTotal = totalConIva + tipAmount
+                const porPersona = split === 'iguales' ? granTotal / personas.length : 0
+
+                return (<>
+                  <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">Split</div>
+                  <div className="flex gap-2">
+                    {['individual', 'iguales', 'yo_invito'].map(s => (
+                      <button key={s} onClick={() => setSplit(s as typeof split)}
+                        className={`flex-1 py-2 rounded-md text-sm border ${split === s ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                        {s === 'individual' ? 'Individual' : s === 'iguales' ? 'Iguales' : 'Yo invito'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-3">
+                    {personas.map((p, i) => { return (
+                        <div key={i} className="border border-gray-200 rounded-md p-3 text-sm">
+                          <div className="flex justify-between font-semibold mb-2">
+                            <span>{p.nombre}</span>
+                            <span>${p.subtotal.toFixed(2)}</span>
+                          </div>
+                          {p.items.map(it => (
+                            <div key={it.id} className="flex justify-between text-gray-500 ml-2 text-xs py-0.5">
+                              <span>{it.cantidad}x {it.nombre || 'Platillo'}</span>
+                              <span>${(Number(it.precio_unitario) * it.cantidad).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className="border-t border-gray-200 pt-3 space-y-1 text-sm">
+                    <div className="flex justify-between"><span>Subtotal</span><span>${total.toFixed(2)}</span></div>
+                    <div className="flex justify-between text-gray-500"><span>IVA ({cuenta.iva_porcentaje}%)</span><span>${iva.toFixed(2)}</span></div>
+                    <div className="flex justify-between"><span>Propina ({tip}%)</span><span>${tipAmount.toFixed(2)}</span></div>
+                    <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200"><span>Total</span><span>${granTotal.toFixed(2)}</span></div>
+                  </div>
+
+                  <div className="flex gap-2 items-center">
+                    <span className="text-xs text-gray-500">Propina:</span>
+                    {[0, 10, 15, 20].map(t => (
+                      <button key={t} onClick={() => setTip(t)}
+                        className={`px-3 py-1 rounded-md text-xs border ${tip === t ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                        {t}%
+                      </button>
+                    ))}
+                  </div>
+
+                  {split === 'individual' && (
+                    <div className="border border-gray-200 rounded-md p-3 text-sm space-y-1">
+                      {personas.map((p, i) => {
+                        const ivaShare = (p.subtotal / total) * iva
+                        const tipShare = (p.subtotal / total) * tipAmount
+                        return (
+                          <div key={i} className="flex justify-between">
+                            <span>{p.nombre}</span>
+                            <span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  {split === 'iguales' && (
+                    <div className="border border-gray-200 rounded-md p-3 text-sm flex justify-between">
+                      <span>Cada quien</span>
+                      <span className="font-semibold">${porPersona.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {split === 'yo_invito' && (
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">¿Quién invita?</div>
+                      <div className="flex gap-2 flex-wrap">
+                        {personas.map((p, i) => (
+                          <button key={i} onClick={() => setYoInvitaIdx(i)}
+                            className={`px-4 py-2 rounded-md text-sm border ${yoInvitaIdx === i ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                            {p.nombre}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="border border-gray-200 rounded-md p-3 text-sm space-y-1">
+                        {personas.map((p, i) => (
+                          <div key={i} className="flex justify-between">
+                            <span>{p.nombre}</span>
+                            <span className={i === yoInvitaIdx ? 'font-semibold' : 'text-gray-400'}>
+                              {i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={() => { cambiarEstado(cuentaMesa.id, 'limpiando'); setCuenta(null); setCuentaMesa(null) }}
+                    className="w-full bg-black text-white py-3 rounded-md text-sm font-semibold">
+                    Cobrar ${granTotal.toFixed(2)}
+                  </button>
+                </>)
+              })()}
+            </div>
           </div>
         )}
       </div>

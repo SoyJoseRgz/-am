@@ -1,5 +1,5 @@
 import { Routes, Route, Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Mesa from './routes/Mesa'
 import PrePedido from './routes/PrePedido'
 import PedidoActivo from './routes/PedidoActivo'
@@ -19,6 +19,18 @@ import QRScanner from './components/QRScanner'
 function Home() {
   const navigate = useNavigate()
   const token = localStorage.getItem('accessToken')
+
+  useEffect(() => {
+    if (!token) return
+    const userStr = localStorage.getItem('user')
+    if (!userStr) return
+    try {
+      const user = JSON.parse(userStr)
+      if (user.rol && user.rol !== 'comensal') {
+        navigate(redirectPorRol(user.rol), { replace: true })
+      }
+    } catch {}
+  }, [token, navigate])
 
   return (
     <div className="min-h-screen bg-white text-black flex flex-col items-center justify-center p-4">

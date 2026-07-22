@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
+import { socket } from '../../services/socket'
 
 interface Item {
   id: number
@@ -25,10 +26,15 @@ export default function AdminPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
 
+  function load() {
+    return api('/api/admin/pedidos').then(setPedidos).catch(() => {})
+  }
+
   useEffect(() => {
-    api('/api/admin/pedidos')
-      .then(setPedidos)
-      .finally(() => setLoading(false))
+    load().finally(() => setLoading(false))
+    socket.on('pedido:nuevo', load)
+    socket.on('item:actualizado', load)
+    return () => { socket.off('pedido:nuevo', load); socket.off('item:actualizado', load) }
   }, [])
 
   const totalCancelados = pedidos.reduce((s, p) => s + p.items.filter(i => i.estado === 'cancelado').length, 0)

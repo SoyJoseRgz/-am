@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { api } from '../../services/api'
+import { api, getCurrentUser } from '../../services/api'
+import { socket } from '../../services/socket'
 
 interface Mesa {
   id: number; restaurante_id: number; numero: number; qr_code: string | null; estado: string
@@ -19,7 +20,12 @@ export default function AdminMesas() {
       console.error('Error al cargar mesas', e)
     }
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    socket.on('mesa:estado', load)
+    socket.on('mesa:unida', load)
+    return () => { socket.off('mesa:estado', load); socket.off('mesa:unida', load) }
+  }, [])
 
   async function save() {
     try {
@@ -45,7 +51,7 @@ export default function AdminMesas() {
   }
 
   async function downloadQR(id: number, num: number) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const user = getCurrentUser()
     const token = localStorage.getItem('accessToken')
     const res = await fetch(`/api/mesas/${id}/qr?restaurante_id=${user.restaurante_id}`, {
       headers: { Authorization: `Bearer ${token}` },

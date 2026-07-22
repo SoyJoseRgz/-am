@@ -42,7 +42,10 @@ export async function crear(data: {
 }) {
   const r = await pool.query<MesaUsuario>(
     `INSERT INTO mesa_usuarios (restaurante_id, mesa_id, usuario_id, codigo_invitacion)
-     VALUES ($1, $2, $3, $4) RETURNING *`,
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT ON CONSTRAINT uq_mesa_usuarios_user
+     DO UPDATE SET activo = true, codigo_invitacion = EXCLUDED.codigo_invitacion
+     RETURNING *`,
     [data.restaurante_id, data.mesa_id, data.usuario_id, data.codigo_invitacion],
   )
   return r.rows[0]
@@ -62,4 +65,8 @@ export async function findCodigoByMesa(mesaId: number) {
     [mesaId],
   )
   return r.rows[0]?.codigo_invitacion || null
+}
+
+export async function desactivarByMesa(mesaId: number) {
+  await pool.query('UPDATE mesa_usuarios SET activo = false WHERE mesa_id = $1 AND activo = true', [mesaId])
 }

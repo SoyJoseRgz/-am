@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../stores/CartContext'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 
 export default function PrePedido(props?: { restauranteId?: string; mesaId?: string; onSuccess?: (pedidoId: number) => void; onClose?: () => void }) {
   const params = useParams()
@@ -15,7 +15,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
   const [success, setSuccess] = useState<number | null>(null)
   const [error, setError] = useState('')
 
-  const currentUser = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } })()
+  const currentUser = getCurrentUser()
   const usuarioId = currentUser.id || 0
 
   useEffect(() => {

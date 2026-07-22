@@ -202,11 +202,11 @@ export async function getDashboardStats(restauranteId: number) {
   const items = await pool.query(
     `SELECT
        COUNT(*)::int AS total,
-       COUNT(*) FILTER (WHERE estado = 'pendiente')::int AS pendiente,
-       COUNT(*) FILTER (WHERE estado = 'preparando')::int AS preparando,
-       COUNT(*) FILTER (WHERE estado = 'listo')::int AS listo,
-       COUNT(*) FILTER (WHERE estado = 'entregado')::int AS entregado,
-       COUNT(*) FILTER (WHERE estado = 'cancelado')::int AS cancelado
+       COUNT(*) FILTER (WHERE pi.estado = 'pendiente')::int AS pendiente,
+       COUNT(*) FILTER (WHERE pi.estado = 'preparando')::int AS preparando,
+       COUNT(*) FILTER (WHERE pi.estado = 'listo')::int AS listo,
+       COUNT(*) FILTER (WHERE pi.estado = 'entregado')::int AS entregado,
+       COUNT(*) FILTER (WHERE pi.estado = 'cancelado')::int AS cancelado
      FROM pedido_items pi
      JOIN pedidos p ON p.id = pi.pedido_id
      WHERE p.restaurante_id = $1`,

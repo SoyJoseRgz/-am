@@ -99,12 +99,3 @@ export async function cocinaRoutes(app: FastifyInstance) {
   })
 }
 
-export async function adminCocinaRoutes(app: FastifyInstance) {
-  app.addHook('preHandler', app.authenticate)
-  app.addHook('preHandler', app.requireRol('admin', 'super_admin'))
-
-  app.get('/api/admin/pedidos', async (request) => {
-    const restauranteId = request.user!.restauranteId!
-    return Pedido.findActivos(restauranteId)
-  })
-}

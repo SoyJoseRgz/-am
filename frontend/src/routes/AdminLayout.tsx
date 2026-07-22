@@ -1,4 +1,7 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { connectToRestaurante } from '../services/socket'
+import { getCurrentUser } from '../services/api'
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: '📊' },
@@ -10,6 +13,12 @@ const links = [
 
 export default function AdminLayout() {
   const navigate = useNavigate()
+  const user = getCurrentUser()
+
+  useEffect(() => {
+    if (!user.restaurante_id) return
+    connectToRestaurante(user.restaurante_id)
+  }, [user.restaurante_id])
 
   return (
     <div className="min-h-screen bg-white text-black flex">
