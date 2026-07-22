@@ -129,10 +129,15 @@ function MesaInner() {
           <div className="flex items-center gap-3 min-w-0">
             <h1 className="text-lg font-medium shrink-0">Mesa {mesa.numero}</h1>
             {codigoInvitacion && (
-              <button onClick={() => {
-                navigator.clipboard.writeText(codigoInvitacion)
-                setCodigoCopyOk(true)
-                setTimeout(() => setCodigoCopyOk(false), 2000)
+              <button onClick={async () => {
+                const text = `🧑‍🍳 Únete a mi mesa con el código: ${codigoInvitacion}`
+                if (navigator.share) {
+                  try { await navigator.share({ title: 'Código de invitación', text }) } catch {}
+                } else {
+                  navigator.clipboard.writeText(codigoInvitacion)
+                  setCodigoCopyOk(true)
+                  setTimeout(() => setCodigoCopyOk(false), 2000)
+                }
               }} className="flex items-center gap-1 h-6 px-2 rounded-md border border-[#e5ddd2] bg-white text-[10px] font-mono text-[#888] hover:text-[#111] hover:border-[#888] transition-colors shrink-0">
                 {codigoCopyOk ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
                 {codigoInvitacion}
@@ -195,7 +200,7 @@ function MesaInner() {
                 <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
               ) : items.length > 0 ? (
                 <div className="space-y-4">
-                  <PrePedido restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
+                  <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
                   {tienePedido && (
                     <button onClick={() => setShowActivo(true)}
                       className="w-full h-10 text-xs border border-[#e5ddd2] text-[#888] hover:text-[#111] rounded-md flex items-center justify-center gap-1.5 transition">
@@ -206,7 +211,7 @@ function MesaInner() {
               ) : tienePedido ? (
                 <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
               ) : (
-                <PrePedido restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
+                <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
             </div>
           </div>
@@ -221,30 +226,16 @@ function MesaInner() {
               <span className="font-semibold text-sm">Mesa {mesa.numero}</span>
               <button onClick={() => setShowMesa(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
             </div>
-            <div className="p-4 space-y-5">
-              {codigoInvitacion && (
-                <div className="bg-[#111] text-white rounded-md p-5 text-center">
-                  <p className="text-[#888] text-xs mb-1">Código de invitación</p>
-                  <p className="text-5xl font-mono font-bold tracking-[0.3em]">{codigoInvitacion}</p>
-                  <p className="text-[#888] text-xs mt-2">Comparte con los demás comensales</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                <h2 className="text-xs font-medium text-[#888] uppercase tracking-wider">En la mesa</h2>
-                {comensales.length === 0 && <p className="text-xs text-[#aaa]">Esperando comensales...</p>}
-                <div className="flex flex-wrap gap-2">
-                  {comensales.map(c => (
-                    <div key={c.usuario_id} className="bg-white border border-[#e5ddd2] rounded-full px-4 py-2 flex items-center gap-2 text-sm">
-                      <div className="w-7 h-7 rounded-full bg-[#111] text-white flex items-center justify-center text-xs font-bold shrink-0">{c.nombre[0]}</div>
-                      <span className={c.usuario_id === usuarioId ? 'font-medium' : 'text-[#888]'}>{c.nombre}{c.usuario_id === usuarioId ? ' (tú)' : ''}</span>
-                    </div>
-                  ))}
-                </div>
+            <div className="p-4 space-y-3">
+              {comensales.length === 0 && <p className="text-xs text-[#aaa] text-center py-8">Esperando comensales...</p>}
+              <div className="flex flex-wrap gap-2">
+                {comensales.map(c => (
+                  <div key={c.usuario_id} className="bg-white border border-[#e5ddd2] rounded-full px-3 py-1.5 flex items-center gap-1.5 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px] font-bold shrink-0">{c.nombre[0]}</div>
+                    <span className={c.usuario_id === usuarioId ? 'font-medium text-sm' : 'text-[#888] text-sm'}>{c.nombre}{c.usuario_id === usuarioId ? ' (tú)' : ''}</span>
+                  </div>
+                ))}
               </div>
-              <button onClick={() => { setShowMesa(false); setShowLlamar(true) }}
-                className="w-full h-11 text-sm border border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111] rounded-md font-medium transition">
-                Llamar mesero
-              </button>
             </div>
           </div>
         </div>

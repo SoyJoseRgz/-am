@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useCart } from '../stores/CartContext'
 import { api, getCurrentUser } from '../services/api'
 
-export default function PrePedido(props?: { restauranteId?: string; mesaId?: string; onSuccess?: (pedidoId: number) => void; onClose?: () => void }) {
+export default function PrePedido(props?: { restauranteId?: string; mesaId?: string; usuarioNombre?: string; onSuccess?: (pedidoId: number) => void; onClose?: () => void }) {
   const params = useParams()
   const restauranteId = props?.restauranteId || params.restauranteId
   const mesaId = props?.mesaId || params.mesaId
@@ -68,7 +68,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
               <span className="w-5 h-5 rounded-full bg-[#111] text-white flex items-center justify-center text-[9px] font-bold shrink-0">
                 {grupo.usuarioNombre[0]}
               </span>
-              <span className="text-[11px] font-medium text-[#888]">{grupo.usuarioNombre}</span>
+              <span className="text-[11px] font-medium text-[#888]">{grupo.usuarioId === usuarioId && props?.usuarioNombre ? props.usuarioNombre : grupo.usuarioNombre}</span>
             </div>
             {grupo.items.map((item, i) => {
               const idx = items.findIndex(it =>
