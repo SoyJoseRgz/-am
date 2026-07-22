@@ -8,6 +8,7 @@ export interface Usuario {
   nombre: string
   rol: 'super_admin' | 'admin' | 'cocina' | 'mesero' | 'comensal'
   force_password_change: boolean
+  fecha_nacimiento: string | null
   created_at: string
 }
 
@@ -42,4 +43,28 @@ export async function create(data: {
     [data.restaurante_id, data.celular, data.password_hash, data.nombre, data.rol, data.force_password_change ?? (data.rol === 'admin')],
   )
   return r.rows[0]
+}
+
+export async function update(id: number, data: { nombre?: string; fecha_nacimiento?: string | null }) {
+  const sets: string[] = []
+  const values: (string | number | null)[] = []
+  let idx = 1
+
+  if (data.nombre !== undefined) {
+    sets.push(`nombre = $${idx++}`)
+    values.push(data.nombre)
+  }
+  if (data.fecha_nacimiento !== undefined) {
+    sets.push(`fecha_nacimiento = $${idx++}`)
+    values.push(data.fecha_nacimiento)
+  }
+
+  if (sets.length === 0) return null
+
+  values.push(id)
+  const r = await pool.query<Usuario>(
+    `UPDATE usuarios SET ${sets.join(', ')} WHERE id = $${idx} RETURNING *`,
+    values,
+  )
+  return r.rows[0] || null
 }

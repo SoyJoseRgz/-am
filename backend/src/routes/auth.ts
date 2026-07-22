@@ -88,6 +88,42 @@ export default async function authRoutes(app: FastifyInstance) {
     return { accessToken }
   })
 
+  app.put('/api/auth/perfil', {
+    preHandler: [app.authenticate],
+  }, async (request, reply) => {
+    const { nombre, fecha_nacimiento, password, newPassword } = request.body as {
+      nombre?: string
+      fecha_nacimiento?: string | null
+      password?: string
+      newPassword?: string
+    }
+
+    const usuario = await Usuario.findById(request.user!.userId)
+    if (!usuario) return reply.status(404).send({ error: 'Usuario no encontrado' })
+
+    if (newPassword) {
+      if (!password) return reply.status(400).send({ error: 'password actual requerido' })
+      const valid = await verifyPassword(password, usuario.password_hash)
+      if (!valid) return reply.status(400).send({ error: 'Contraseña actual incorrecta' })
+      const password_hash = await hashPassword(newPassword)
+      const { pool } = await import('../db.js')
+      await pool.query('UPDATE usuarios SET password_hash = $1 WHERE id = $2', [password_hash, usuario.id])
+    }
+
+    const updated = await Usuario.update(usuario.id, { nombre, fecha_nacimiento })
+
+    return {
+      usuario: {
+        id: usuario.id,
+        nombre: updated?.nombre ?? usuario.nombre,
+        celular: usuario.celular,
+        rol: usuario.rol,
+        restaurante_id: usuario.restaurante_id,
+        fecha_nacimiento: updated?.fecha_nacimiento ?? usuario.fecha_nacimiento,
+      },
+    }
+  })
+
   app.post('/api/auth/logout', async (request, reply) => {
     const { refreshToken } = request.body as { refreshToken: string }
     if (!refreshToken) {
