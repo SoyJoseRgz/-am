@@ -221,10 +221,12 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                   <span>${p.subtotal.toFixed(2)}</span>
                 </div>
               ))}
-              <div className="flex justify-between text-gray-500">
-                <span>IVA ({ivaPct}%)</span>
-                <span>${iva.toFixed(2)}</span>
-              </div>
+              {!ivaIncluido && (
+                <div className="flex justify-between text-gray-500">
+                  <span>IVA ({ivaPct}%)</span>
+                  <span>${iva.toFixed(2)}</span>
+                </div>
+              )}
               {tip > 0 && (
                 <div className="flex justify-between text-gray-500">
                   <span>Propina ({tip}%)</span>
@@ -237,60 +239,62 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               </div>
             </div>
 
-            <div>
-              <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">Dividir cuenta</div>
-              <div className="flex gap-2">
-                {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                  <button key={s} onClick={() => setSplit(s)}
-                    className={`flex-1 py-2 rounded-md text-xs border ${split === s ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
-                    {s === 'individual' ? 'Individual' : s === 'iguales' ? 'Iguales' : 'Yo invito'}
-                  </button>
-                ))}
+            {personas.length > 1 && (
+              <div>
+                <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold mb-2">Dividir cuenta</div>
+                <div className="flex gap-2">
+                  {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
+                    <button key={s} onClick={() => setSplit(s)}
+                      className={`flex-1 py-2 rounded-md text-xs border ${split === s ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                      {s === 'individual' ? 'Individual' : s === 'iguales' ? 'Iguales' : 'Yo invito'}
+                    </button>
+                  ))}
+                </div>
+                {split === 'individual' && (
+                  <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 space-y-1">
+                    {personas.map((p, i) => {
+                      const ivaShare = (p.subtotal / total) * iva
+                      const tipShare = (p.subtotal / total) * tipAmount
+                      return (
+                        <div key={i} className="flex justify-between">
+                          <span>{p.nombre}</span>
+                          <span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+                {split === 'iguales' && (
+                  <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 flex justify-between">
+                    <span>Cada quien</span>
+                    <span className="font-semibold">${porPersona.toFixed(2)}</span>
+                  </div>
+                )}
+                {split === 'yo_invito' && (
+                  <div className="mt-2 space-y-2">
+                    <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">¿Quién invita?</div>
+                    <div className="flex gap-2 flex-wrap">
+                      {personas.map((p, i) => (
+                        <button key={i} onClick={() => setYoInvitaIdx(i)}
+                          className={`px-4 py-2 rounded-md text-xs border ${yoInvitaIdx === i ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
+                          {p.nombre}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="border border-gray-200 rounded-md p-3 text-sm space-y-1">
+                      {personas.map((p, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span>{p.nombre}</span>
+                          <span className={i === yoInvitaIdx ? 'font-semibold' : 'text-gray-400'}>
+                            {i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              {split === 'individual' && (
-                <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 space-y-1">
-                  {personas.map((p, i) => {
-                    const ivaShare = (p.subtotal / total) * iva
-                    const tipShare = (p.subtotal / total) * tipAmount
-                    return (
-                      <div key={i} className="flex justify-between">
-                        <span>{p.nombre}</span>
-                        <span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-              {split === 'iguales' && (
-                <div className="border border-gray-200 rounded-md p-3 text-sm mt-2 flex justify-between">
-                  <span>Cada quien</span>
-                  <span className="font-semibold">${porPersona.toFixed(2)}</span>
-                </div>
-              )}
-              {split === 'yo_invito' && (
-                <div className="mt-2 space-y-2">
-                  <div className="text-xs text-gray-400 uppercase tracking-wide font-semibold">¿Quién invita?</div>
-                  <div className="flex gap-2 flex-wrap">
-                    {personas.map((p, i) => (
-                      <button key={i} onClick={() => setYoInvitaIdx(i)}
-                        className={`px-4 py-2 rounded-md text-xs border ${yoInvitaIdx === i ? 'bg-black text-white border-black' : 'border-gray-200'}`}>
-                        {p.nombre}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="border border-gray-200 rounded-md p-3 text-sm space-y-1">
-                    {personas.map((p, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>{p.nombre}</span>
-                        <span className={i === yoInvitaIdx ? 'font-semibold' : 'text-gray-400'}>
-                          {i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="flex gap-2 items-center">
               <span className="text-xs text-gray-500">Propina:</span>

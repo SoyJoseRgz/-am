@@ -45,6 +45,14 @@ function MesaInner() {
 
   function openOverlay(v: string) { setSearchParams({ v }) }
   function closeOverlay() { setSearchParams({}) }
+
+  useEffect(() => {
+    window.history.pushState(null, '')
+    const onPop = () => window.history.pushState(null, '')
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
   const currentUser = getCurrentUser()
   const usuarioId = currentUser.id || 0
   const usuarioNombre = currentUser.nombre || ''
