@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
 import { MESA_ESTADO_LABEL } from '../constants/estados'
@@ -31,24 +31,20 @@ function MesaInner() {
   const [loading, setLoading] = useState(true)
   const [needsCode, setNeedsCode] = useState(false)
   const [joinAttempted, setJoinAttempted] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const showMenu = searchParams.get('v') === 'menu'
+  const showPrePedido = searchParams.get('v') === 'prepedido'
+  const showPedidoActivo = searchParams.get('v') === 'pedido'
   const [tienePedido, setTienePedido] = useState(false)
   const [showLlamar, setShowLlamar] = useState(false)
   const [llamarMensaje, setLlamarMensaje] = useState('')
   const [llamarEnviando, setLlamarEnviando] = useState(false)
   const [llamarExito, setLlamarExito] = useState(false)
-  const [showPrePedido, setShowPrePedido] = useState(false)
-  const [showPedidoActivo, setShowPedidoActivo] = useState(false)
   const [cuentaCerrada, setCuentaCerrada] = useState(false)
-  const location = useLocation()
   const { items } = useCart()
 
-  useEffect(() => {
-    if (location.state?.openMenu) {
-      setShowMenu(true)
-      window.history.replaceState({}, document.title)
-    }
-  }, [location.state])
+  function openOverlay(v: string) { setSearchParams({ v }) }
+  function closeOverlay() { setSearchParams({}) }
   const currentUser = getCurrentUser()
   const usuarioId = currentUser.id || 0
   const usuarioNombre = currentUser.nombre || ''
@@ -243,14 +239,14 @@ function MesaInner() {
         <div className="flex flex-col items-center gap-3 pt-4">
           {tienePedido && (
             <button
-              onClick={() => setShowPedidoActivo(true)}
+              onClick={() => openOverlay('pedido')}
               className="w-full bg-white border border-black hover:bg-gray-50 py-3 rounded-md font-semibold transition text-black max-w-sm"
             >
               Ver mi pedido
             </button>
           )}
           <button
-            onClick={() => setShowMenu(true)}
+            onClick={() => openOverlay('menu')}
             className="w-full bg-black hover:bg-gray-800 py-3 rounded-md font-semibold transition text-white max-w-sm"
           >
             Ver menú
@@ -341,31 +337,31 @@ function MesaInner() {
           <div className="fixed inset-0 z-40 bg-white overflow-y-auto">
             <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-gray-100 sticky top-0 bg-white z-10">
               <span className="font-bold text-lg">Menú</span>
-              <button onClick={() => setShowMenu(false)} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
+              <button onClick={closeOverlay} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
             </div>
             <MenuDigital
               restauranteId={restauranteId!}
               usuarioId={usuarioId}
               usuarioNombre={usuarioNombre}
-              onClose={() => setShowMenu(false)}
-              onCartClick={() => { setShowMenu(false); setShowPrePedido(true) }}
+              onClose={closeOverlay}
+              onCartClick={() => openOverlay('prepedido')}
             />
           </div>
         )}
 
         {showPrePedido && (
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowPrePedido(false)}>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={closeOverlay}>
             <div className="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
                 <span className="font-bold text-lg">Pre-pedido</span>
-                <button onClick={() => setShowPrePedido(false)} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
+                <button onClick={closeOverlay} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
               </div>
               <div className="p-4">
                 <PrePedido
                   restauranteId={restauranteId}
                   mesaId={mesaId}
-                  onClose={() => setShowPrePedido(false)}
-                  onSuccess={() => { setShowPrePedido(false); setShowPedidoActivo(true) }}
+                  onClose={closeOverlay}
+                  onSuccess={() => openOverlay('pedido')}
                 />
               </div>
             </div>
@@ -373,28 +369,28 @@ function MesaInner() {
         )}
 
         {showPedidoActivo && (
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowPedidoActivo(false)}>
+          <div className="fixed inset-0 z-40 bg-black/30" onClick={closeOverlay}>
             <div className="absolute bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 bg-white w-full sm:max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
               <div className="sticky top-0 bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between z-10">
                 <span className="font-bold text-lg">Mi pedido</span>
-                <button onClick={() => setShowPedidoActivo(false)} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
+                <button onClick={closeOverlay} className="text-gray-400 hover:text-black text-xl leading-none">✕</button>
               </div>
               <div className="p-4">
                 <PedidoActivo
                   restauranteId={restauranteId}
                   mesaId={mesaId}
-                  onClose={() => setShowPedidoActivo(false)}
-                  onSumarMas={() => { setShowPedidoActivo(false); setShowMenu(true) }}
+                  onClose={closeOverlay}
+                  onSumarMas={() => openOverlay('menu')}
                 />
               </div>
             </div>
           </div>
         )}
 
-        {cartCount > 0 && !showMenu && (
+        {cartCount > 0 && !showMenu && !showPrePedido && !showPedidoActivo && (
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white via-white pointer-events-none">
           <button
-            onClick={() => setShowPrePedido(true)}
+            onClick={() => openOverlay('prepedido')}
               className="pointer-events-auto w-full bg-black hover:bg-gray-800 text-white py-3 rounded-md font-semibold flex items-center justify-center gap-2 transition"
             >
               <span>Ver pedido</span>
