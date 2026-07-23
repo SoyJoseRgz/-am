@@ -40,41 +40,29 @@ export default async function mesaRoutes(app: FastifyInstance) {
 
     const activos = await MesaUsuario.countActivosByMesa(mesaId)
 
-    if (activos === 0) {
-      const codigo_invitacion = Math.floor(1000 + Math.random() * 9000).toString()
-      await MesaUsuario.crear({
-        restaurante_id: restaurante_id,
-        mesa_id: mesaId,
-        usuario_id: usuarioId,
-        codigo_invitacion,
-      })
-      await Mesa.setEstado(mesaId, 'ocupada')
+    let codigoUsar = codigo
 
+    if (activos === 0) {
+      codigoUsar = Math.floor(1000 + Math.random() * 9000).toString()
+      await MesaUsuario.crear({ restaurante_id, mesa_id: mesaId, usuario_id: usuarioId, codigo_invitacion: codigoUsar })
+      await Mesa.setEstado(mesaId, 'ocupada')
       app.io.to(`room:restaurante:${restaurante_id}`).emit('mesa:estado', { mesaId, estado: 'ocupada' })
       app.io.to(`room:mesa:${restaurante_id}:${mesaId}`).emit('comensal:unido', { usuarioId })
-
-      return { mesa: { id: mesa.id, numero: mesa.numero, estado: 'ocupada' }, codigo_invitacion, primero: true }
+      return { mesa: { id: mesa.id, numero: mesa.numero, estado: 'ocupada' }, codigo_invitacion: codigoUsar, primero: true }
     }
 
-    if (!codigo) {
-      return reply.status(400).send({ error: 'Código de invitación requerido' })
+    if (!codigoUsar) {
+      const existente = await MesaUsuario.findCodigoByMesa(mesaId)
+      if (!existente) return reply.status(400).send({ error: 'Código de invitación requerido' })
+      codigoUsar = existente
+    } else {
+      const valido = await MesaUsuario.validarCodigo(mesaId, codigoUsar)
+      if (!valido) return reply.status(400).send({ error: 'Código de invitación inválido' })
     }
 
-    const valido = await MesaUsuario.validarCodigo(mesaId, codigo)
-    if (!valido) {
-      return reply.status(400).send({ error: 'Código de invitación inválido' })
-    }
-
-    await MesaUsuario.crear({
-      restaurante_id: restaurante_id,
-      mesa_id: mesaId,
-      usuario_id: usuarioId,
-      codigo_invitacion: codigo,
-    })
-
+    await MesaUsuario.crear({ restaurante_id, mesa_id: mesaId, usuario_id: usuarioId, codigo_invitacion: codigoUsar })
     app.io.to(`room:mesa:${restaurante_id}:${mesaId}`).emit('comensal:unido', { usuarioId })
-
-    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, codigo_invitacion: codigo, primero: false }
+    return { mesa: { id: mesa.id, numero: mesa.numero, estado: mesa.estado }, codigo_invitacion: codigoUsar, primero: false }
   })
 
   app.get('/api/mesas/:id/qr', async (request, reply) => {

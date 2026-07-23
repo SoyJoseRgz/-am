@@ -19,11 +19,9 @@ function MesaInner() {
   const navigate = useNavigate()
   const [mesa, setMesa] = useState<MesaData | null>(null)
   const [comensales, setComensales] = useState<Comensal[]>([])
-  const [codigoInput, setCodigoInput] = useState('')
   const [codigoInvitacion, setCodigoInvitacion] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [needsCode, setNeedsCode] = useState(false)
   const [joinAttempted, setJoinAttempted] = useState(false)
   const [tienePedido, setTienePedido] = useState(false)
   const [cuentaCerrada, setCuentaCerrada] = useState(false)
@@ -75,7 +73,6 @@ function MesaInner() {
       localStorage.setItem('lastMesa_mesaId', String(mesaId))
       connectToMesa(Number(restauranteId), Number(mesaId))
     } catch (e: any) {
-      if (e.message === 'Código de invitación requerido') { setNeedsCode(true); setLoading(false); return }
       setError(e.message || 'Error al unirse')
     } finally { setLoading(false) }
   }, [restauranteId, mesaId, navigate])
@@ -84,8 +81,9 @@ function MesaInner() {
     socket.on('comensal:unido', () => { api('/api/mesas/' + mesaId + '?restaurante_id=' + restauranteId).then((d: any) => { setComensales(d.comensales || []); if (d.codigo_invitacion) setCodigoInvitacion(d.codigo_invitacion) }) })
     socket.on('pedido:creado', () => setTienePedido(true))
     socket.on('item:actualizado', () => { api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => setTienePedido(Array.isArray(data) && data.length > 0)).catch(() => {}) })
+    socket.on('item:pagado', () => { api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => { const t = Array.isArray(data) && data.length > 0 && data.some((p: any) => p.items?.some((i: any) => !i.pagado)); setTienePedido(t) }).catch(() => {}) })
     socket.on('mesa:estado', (d: any) => { if (d.mesaId === Number(mesaId)) { setMesa(prev => prev ? { ...prev, estado: d.estado } : prev);     if (['limpiando', 'libre'].includes(d.estado)) setCuentaCerrada(true) } })
-    return () => { socket.off('comensal:unido'); socket.off('pedido:creado'); socket.off('item:actualizado'); socket.off('mesa:estado'); leaveMesa(Number(restauranteId), Number(mesaId)) }
+    return () => { socket.off('comensal:unido'); socket.off('pedido:creado'); socket.off('item:actualizado'); socket.off('item:pagado'); socket.off('mesa:estado'); leaveMesa(Number(restauranteId), Number(mesaId)) }
   }, [join, mesaId, restauranteId])
 
   useEffect(() => {
@@ -129,17 +127,7 @@ function MesaInner() {
   }
 
   if (loading && !joinAttempted) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex items-center justify-center"><p className="text-[#888]">Uniéndote a la mesa...</p></div>
-  if (error && !mesa && !needsCode) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
-
-  if (needsCode && !mesa) {
-    return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4"><h2 className="text-xl font-bold text-center">Unirse a mesa</h2><p className="text-xs text-[#888] text-center">Ingresa el código de invitación de 4 dígitos</p>
-        <input type="text" maxLength={4} placeholder="0000" value={codigoInput} onChange={e => setCodigoInput(e.target.value.replace(/\D/g, ''))} className="w-full p-4 rounded-md bg-white border border-[#e5ddd2] text-center font-mono text-2xl tracking-widest outline-none focus:border-[#111]" />
-        <button onClick={() => join(codigoInput)} disabled={codigoInput.length !== 4} className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] disabled:bg-[#e5ddd2] disabled:text-[#aaa] text-white rounded-md font-medium transition">Unirse</button>
-        {error && <p className="text-red-500 text-xs text-center bg-red-50 border border-red-100 rounded-md px-3 py-2">{error}</p>}
-      </div>
-    </div>
-  }
+  if (error && !mesa) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
 
   if (cuentaCerrada) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Cuenta cerrada</h2><p className="text-xs text-[#888]">Gracias por tu visita. Serás redirigido en unos segundos.</p><button onClick={() => { limpiarCarrito(); navigate('/') }} className="h-10 px-6 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Salir ahora</button></div>
 

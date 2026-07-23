@@ -77,6 +77,7 @@ export async function findByMesa(restauranteId: number, mesaId: number) {
      FROM pedidos p
      LEFT JOIN usuarios u ON u.id = p.usuario_id
      WHERE p.restaurante_id = $1 AND p.mesa_id = $2 AND p.estado = 'activo'
+     AND EXISTS (SELECT 1 FROM pedido_items pi WHERE pi.pedido_id = p.id AND pi.estado NOT IN ('entregado','cancelado'))
      ORDER BY p.created_at DESC`,
     [restauranteId, mesaId],
   )
@@ -227,6 +228,25 @@ export async function getDashboardStats(restauranteId: number) {
     items: items.rows[0],
     mesas: mesas.rows[0],
   }
+}
+
+export async function marcarPagado(mesaId: number, usuarioId: number) {
+  await pool.query(
+    `UPDATE pedido_items SET pagado = true
+     WHERE usuario_id = $1
+     AND pagado = false
+     AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $2 AND estado = 'activo')`,
+    [usuarioId, mesaId],
+  )
+}
+
+export async function marcarTodoPagado(mesaId: number) {
+  await pool.query(
+    `UPDATE pedido_items SET pagado = true
+     WHERE pagado = false
+     AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $1 AND estado = 'activo')`,
+    [mesaId],
+  )
 }
 
 export async function findByItemId(itemId: number) {

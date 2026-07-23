@@ -63,6 +63,25 @@ export default async function pedidoRoutes(app: FastifyInstance) {
     })
     return { success: true }
   })
+
+  app.post('/api/pedidos/pagar', async (request, reply) => {
+    const { mesa_id, split } = request.body as { mesa_id: number; split: string }
+    const usuarioId = request.user!.userId!
+
+    const mesa = await Mesa.findById(Number(mesa_id))
+    if (!mesa) return reply.status(404).send({ error: 'Mesa no encontrada' })
+    const restauranteId = mesa.restaurante_id
+
+    if (split === 'yo_invito') {
+      await Pedido.marcarTodoPagado(Number(mesa_id))
+    } else {
+      await Pedido.marcarPagado(Number(mesa_id), usuarioId)
+    }
+
+    app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('item:pagado', { usuarioId, split })
+    app.io.to(`room:restaurante:${restauranteId}`).emit('item:pagado', { mesaId: mesa_id, usuarioId, split })
+    return { success: true }
+  })
 }
 
 export async function cocinaRoutes(app: FastifyInstance) {
