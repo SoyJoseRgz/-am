@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { User, Plus, Wallet, Banknote, Landmark, Percent } from 'lucide-react'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
 
@@ -29,7 +30,12 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const [cambioPara, setCambioPara] = useState('')
   const [pagoEnviando, setPagoEnviando] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [depositoInfo, setDepositoInfo] = useState<{ banco: string; clabe: string; titular: string } | null>(null)
   const user = getCurrentUser()
+
+  useEffect(() => {
+    api<any>(`/api/restaurantes/${restauranteId}/menu`).then(d => setDepositoInfo(d.deposito_info || null)).catch(() => {})
+  }, [restauranteId])
 
   function cargar() {
     if (!mesaId || !restauranteId) return
@@ -105,24 +111,27 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             <div className="divide-y divide-dashed divide-[#ddd]">
               {personas.map((p, gi) => (
                 <div key={gi} className="py-3">
-                  <p className="text-[11px] text-[#bbb] tracking-[0.15em] uppercase mb-2">
+                  <p className="text-[11px] text-[#bbb] tracking-[0.15em] uppercase mb-2 flex items-center gap-1.5">
+                    <User className="w-3 h-3" />
                     {p.nombre}
-                    {p.items.every(i => i.pagado) ? <span className="text-[#aaa] ml-1">✓ pagado</span> : ''}
+                    {p.items.every(i => i.pagado) ? <span className="text-[#aaa] ml-auto text-[10px] flex items-center gap-1">pagado</span> : ''}
                   </p>
-                  {p.items.map(item => {
-                    const esPagado = item.pagado
-                    const esEntregado = item.estado === 'entregado'
-                    return (
-                      <div key={item.id} className={`flex items-baseline justify-between gap-3 py-0.5 ${esPagado ? 'text-[#ddd]' : esEntregado ? 'text-[#bbb]' : 'text-[#111]'}`}>
-                        <div className="flex items-baseline gap-1.5 min-w-0">
-                          {esPagado && <span className="text-[10px] text-[#ccc] shrink-0">✓</span>}
-                          <span className="font-medium shrink-0">{item.cantidad}</span>
-                          <span className="truncate">{item.nombre}</span>
+                  <div className="grid grid-cols-2 gap-x-3">
+                    {p.items.map(item => {
+                      const esPagado = item.pagado
+                      const esEntregado = item.estado === 'entregado'
+                      return (
+                        <div key={item.id} className={`flex items-baseline justify-between gap-1 py-0.5 ${esPagado ? 'text-[#ddd]' : esEntregado ? 'text-[#bbb]' : 'text-[#111]'}`}>
+                          <div className="flex items-baseline gap-1 min-w-0">
+                            {esPagado && <span className="text-[10px] text-[#ccc] shrink-0">✓</span>}
+                            <span className="font-medium shrink-0">{item.cantidad}</span>
+                            <span className="truncate text-[11px]">{item.nombre}</span>
+                          </div>
+                          <span className="shrink-0 text-[11px]">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
                         </div>
-                        <span className="shrink-0">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                   <div className="flex items-baseline justify-between text-[11px] text-[#888] pt-1 mt-1 border-t border-dotted border-[#eee]">
                     <span>subtotal</span>
                     <span>${p.items.filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0).toFixed(2)}</span>
@@ -133,10 +142,12 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
             {!todosPagados && !userGroup?.items.every(i => i.pagado) && userItemsNoPagados.length > 0 && (
               <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 space-y-2">
-                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase text-center">- - - pagar - - -</p>
+                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase text-center flex items-center justify-center gap-1">
+                  <Wallet className="w-3 h-3" /> - - - pagar - - -
+                </p>
                 <div className="flex gap-1.5 justify-center">
                   {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                    <button key={s} onClick={() => { setSplit(s); setShowModal(true) }}
+                    <button key={s} onClick={() => { setSplit(s); setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
                       className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
                         split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
                       }`}>
@@ -164,8 +175,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
             <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 text-center">
               <button onClick={() => props?.onSumarMas?.()}
-                className="text-[11px] text-[#888] underline underline-offset-2 decoration-dotted hover:text-[#111] uppercase tracking-wider">
-                + agregar mas
+                className="text-[11px] text-[#888] underline underline-offset-2 decoration-dotted hover:text-[#111] uppercase tracking-wider flex items-center justify-center gap-1 mx-auto">
+                <Plus className="w-3 h-3" /> pedir algo mas
               </button>
             </div>
           </div>
@@ -177,34 +188,29 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
           <div className="bg-white rounded-xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg">Pagar</h3>
 
-            <div className="space-y-1.5">
-              <p className="text-[11px] text-[#888] tracking-wider uppercase">split</p>
-              <div className="flex gap-1.5">
-                {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                  <button key={s} onClick={() => setSplit(s)}
-                    className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
-                      split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                    }`}>
-                    {s === 'individual' ? 'cada quien' : s === 'iguales' ? 'iguales' : 'invito'}
-                  </button>
-                ))}
-              </div>
-              {split === 'individual' && <p className="text-[11px] text-[#888]">tus items — ${userSubtotal.toFixed(2)}</p>}
-              {split === 'iguales' && <p className="text-[11px] text-[#888]">${porPersonaTotal.toFixed(2)} c/u</p>}
-              {split === 'yo_invito' && <p className="text-[11px] text-[#888]"> tú pagas ${granTotal.toFixed(2)}</p>}
+            <div className="text-[11px] text-[#888] space-y-0.5">
+              <p>{split === 'individual' ? `tus items — $${userSubtotal.toFixed(2)}` : split === 'iguales' ? `$${porPersonaTotal.toFixed(2)} c/u` : `tú pagas todo — $${granTotal.toFixed(2)}`}</p>
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[11px] text-[#888] tracking-wider uppercase">método de pago</p>
+              <p className="text-[11px] text-[#888] tracking-wider uppercase flex items-center gap-1">
+                <Wallet className="w-3 h-3" /> método de pago
+              </p>
               <div className="flex gap-1.5">
-                {(['efectivo', 'deposito'] as const).map(m => (
-                  <button key={m} onClick={() => setMetodo(m)}
-                    className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
-                      metodo === m ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                <button onClick={() => setMetodo('efectivo')}
+                  className={`text-[11px] px-3 py-1.5 border border-dashed transition flex items-center gap-1 ${
+                    metodo === 'efectivo' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                  }`}>
+                  <Banknote className="w-3 h-3" /> efectivo
+                </button>
+                {depositoInfo && (
+                  <button onClick={() => setMetodo('deposito')}
+                    className={`text-[11px] px-3 py-1.5 border border-dashed transition flex items-center gap-1 ${
+                      metodo === 'deposito' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
                     }`}>
-                    {m === 'efectivo' ? 'efectivo' : 'depósito'}
+                    <Landmark className="w-3 h-3" /> depósito
                   </button>
-                ))}
+                )}
               </div>
               {metodo === 'efectivo' && (
                 <div className="flex items-center gap-2 pt-1">
@@ -214,13 +220,24 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                     className="w-20 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
                 </div>
               )}
-              {metodo === 'deposito' && (
+              {metodo === 'deposito' && depositoInfo && (
+                <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 space-y-1.5 mt-1">
+                  <p className="text-[11px] font-medium text-[#111] flex items-center gap-1">
+                    <Landmark className="w-3 h-3" /> {depositoInfo.banco}
+                  </p>
+                  <p className="text-[11px] text-[#666] font-mono">{depositoInfo.clabe}</p>
+                  <p className="text-[11px] text-[#888]">{depositoInfo.titular}</p>
+                </div>
+              )}
+              {metodo === 'deposito' && !depositoInfo && (
                 <p className="text-[11px] text-[#aaa]">pide los datos de depósito al mesero</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[11px] text-[#888] tracking-wider uppercase">propina</p>
+              <p className="text-[11px] text-[#888] tracking-wider uppercase flex items-center gap-1">
+                <Percent className="w-3 h-3" /> propina
+              </p>
               <div className="flex gap-1 flex-wrap">
                 {[0, 10, 15, 20].map(t => (
                   <button key={t} onClick={() => setTip(t)}

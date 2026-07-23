@@ -37,7 +37,7 @@ export async function create(data: {
   return r.rows[0]
 }
 
-export async function update(id: number, data: { nombre?: string; slug?: string; direccion?: string; telefono?: string; activo?: boolean }) {
+export async function update(id: number, data: { nombre?: string; slug?: string; direccion?: string; telefono?: string; activo?: boolean; deposito_info?: any }) {
   const sets: string[] = []
   const vals: any[] = []
   let i = 1

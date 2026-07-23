@@ -8,6 +8,7 @@ const links = [
   { to: '/admin/menu', label: 'Menú', icon: '📋' },
   { to: '/admin/mesas', label: 'Mesas', icon: '🪑' },
   { to: '/admin/pedidos', label: 'Pedidos', icon: '🧾' },
+  { to: '/admin/deposito', label: 'Depósito', icon: '🏦' },
   { to: '/admin/staff', label: 'Staff', icon: '👥' },
 ]
 

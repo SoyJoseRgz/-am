@@ -15,6 +15,7 @@ import AdminMenu from './routes/admin/Menu'
 import AdminMesas from './routes/admin/Mesas'
 import AdminStaff from './routes/admin/Staff'
 import AdminPedidos from './routes/admin/Pedidos'
+import AdminDeposito from './routes/admin/Deposito'
 import Mesero from './routes/Mesero'
 import Super from './routes/Super'
 import ForcePasswordChange from './routes/ForcePasswordChange'
@@ -410,6 +411,7 @@ export default function App() {
         <Route path="menu" element={<AdminMenu />} />
         <Route path="mesas" element={<AdminMesas />} />
         <Route path="pedidos" element={<AdminPedidos />} />
+        <Route path="deposito" element={<AdminDeposito />} />
         <Route path="staff" element={<AdminStaff />} />
       </Route>
       <Route path="/cocina" element={<Cocina />} />

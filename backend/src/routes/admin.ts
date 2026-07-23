@@ -9,6 +9,7 @@ import * as Modificador from '../models/modificador.js'
 import * as Mesa from '../models/mesa.js'
 import * as Staff from '../models/staff.js'
 import * as Pedido from '../models/pedido.js'
+import * as Restaurante from '../models/restaurante.js'
 import { hashPassword } from '../services/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -197,6 +198,18 @@ export default async function adminRoutes(app: FastifyInstance) {
   app.delete('/api/admin/staff/:id', async (request) => {
     const { id } = request.params as { id: string }
     await Staff.remove(request.user!.restauranteId!, Number(id))
+    return { success: true }
+  })
+
+  // ── Depósito ──
+  app.get('/api/admin/deposito', async (request) => {
+    const r = await Restaurante.findById(request.user!.restauranteId!)
+    return { deposito_info: (r as any).deposito_info || null }
+  })
+
+  app.put('/api/admin/deposito', async (request) => {
+    const { deposito_info } = request.body as { deposito_info: any }
+    await Restaurante.update(request.user!.restauranteId!, { deposito_info: deposito_info || null })
     return { success: true }
   })
 }

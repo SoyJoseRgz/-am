@@ -16,6 +16,7 @@ export default async function menuRoutes(app: FastifyInstance) {
       categorias: menu,
       iva_porcentaje: Number(restaurante?.iva_porcentaje || 16),
       iva_incluido: restaurante?.iva_incluido ?? true,
+      deposito_info: (restaurante as any)?.deposito_info || null,
     }
   })
 }
