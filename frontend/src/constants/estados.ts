@@ -20,9 +20,4 @@ export const ITEM_ESTADO_BORDER: Record<string, string> = {
   entregado: 'border-gray-200', cancelado: 'border-red-200',
 }
 
-export const ITEM_ESTADO_COLOR: Record<string, string> = {
-  pendiente: 'text-yellow-600', preparando: 'text-blue-600', listo: 'text-green-600',
-  entregado: 'text-gray-400', cancelado: 'text-red-400',
-}
-
 export const ESTADOS_ITEM = ['pendiente', 'preparando', 'listo', 'entregado'] as const

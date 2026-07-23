@@ -138,12 +138,19 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
     <div className="pb-20">
       {/* search */}
       <label className="sticky top-0 z-10 block bg-[#faf6f2] pt-2 pb-3">
-        <input
-          className="w-full h-11 bg-white border border-[#e5ddd2] rounded-md px-4 text-sm outline-none focus:border-[#111] placeholder:text-[#bbb]"
-          placeholder="Buscar platillo..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        <div className="relative">
+          <input
+            className="w-full h-11 bg-white border border-[#e5ddd2] rounded-md px-4 text-sm outline-none focus:border-[#111] placeholder:text-[#bbb] pr-8"
+            placeholder="Buscar platillo..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#bbb] hover:text-[#111] transition-colors text-xs">
+              ✕
+            </button>
+          )}
+        </div>
       </label>
 
       {/* category pills */}
@@ -221,6 +228,7 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
                 <div>
                   <h3 className="font-bold text-lg">{sel.nombre}</h3>
                   {sel.descripcion && <p className="text-sm text-[#888] mt-1 leading-relaxed">{sel.descripcion}</p>}
+                  {sel.tiempo_preparacion && <p className="text-[11px] text-[#aaa] mt-1">~{sel.tiempo_preparacion} min</p>}
                   <p className="text-sm font-bold mt-2">${sel.precio}</p>
                 </div>
                 <button onClick={() => setSel(null)} className="w-7 h-7 rounded-full bg-[#faf6f2] flex items-center justify-center text-sm hover:bg-[#e5ddd2] transition-colors shrink-0">✕</button>

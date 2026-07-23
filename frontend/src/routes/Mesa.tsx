@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
 import { Input } from '../components/ui/input'
@@ -48,8 +48,18 @@ function MesaInner() {
   const [perfilError, setPerfilError] = useState('')
   const [codigoCopyOk, setCodigoCopyOk] = useState(false)
   const [showActivo, setShowActivo] = useState(false)
+  const [cuentaSolicitada, setCuentaSolicitada] = useState(false)
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
-  const cartTotal = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.precioUnitario * i.cantidad, 0)
+  const [bump, setBump] = useState(false)
+  const prevCount = useRef(cartCount)
+  useEffect(() => {
+    if (cartCount > prevCount.current) { setBump(true); setTimeout(() => setBump(false), 250) }
+    prevCount.current = cartCount
+  }, [cartCount])
+  const cartTotal = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => {
+    const mods = i.modificadores.reduce((m, mod) => m + mod.precio, 0)
+    return s + (i.precioUnitario + mods) * i.cantidad
+  }, 0)
 
   const join = useCallback(async (codigo?: string) => {
     const token = localStorage.getItem('accessToken')
@@ -128,6 +138,7 @@ function MesaInner() {
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <h1 className="text-base font-medium shrink-0">Mesa {mesa.numero}</h1>
+            {cuentaSolicitada && <span className="text-[9px] text-green-600 uppercase tracking-wider shrink-0">cuenta pedida</span>}
             {codigoInvitacion && (
               <button onClick={async () => {
                 const text = `Únete a mi mesa con el código: ${codigoInvitacion}`
@@ -149,8 +160,8 @@ function MesaInner() {
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={() => setShowLlamar(true)} title="Llamar mesero"
-              className="w-8 h-8 flex items-center justify-center rounded-md border border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111] transition-colors">
+            <button onClick={() => { setShowLlamar(true); if (llamarExito) { setLlamarExito(false); setLlamarMensaje('') } }} title="Llamar mesero"
+              className={`w-8 h-8 flex items-center justify-center rounded-md border transition-colors ${llamarExito ? 'bg-green-50 border-green-200 text-green-600' : 'border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111]'}`}>
               <Bell className="w-3.5 h-3.5" />
             </button>
             <button onClick={() => setShowMesa(true)} title="Comensales"
@@ -166,7 +177,7 @@ function MesaInner() {
       </div>
 
       {/* menú siempre visible */}
-      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: cartCount > 0 ? '72px' : '0' }}>
+      <div className="flex-1 overflow-y-auto" style={{ paddingBottom: cartCount > 0 || tienePedido ? '72px' : '0' }}>
         <div className="max-w-lg mx-auto">
           <MenuDigital restauranteId={restauranteId!} usuarioId={usuarioId} usuarioNombre={usuarioNombre} />
         </div>
@@ -176,7 +187,7 @@ function MesaInner() {
       {cartCount > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5ddd2] z-20">
           <div className="max-w-lg mx-auto">
-            <button onClick={() => setShowCart(true)} className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#faf6f2] transition-colors">
+            <button onClick={() => setShowCart(true)} className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#faf6f2] transition-colors ${bump ? 'animate-bump' : ''}`}>
               <div className="relative">
                 <ShoppingCart className="w-5 h-5 text-[#111]" />
                 <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#111] text-white text-[8px] font-bold flex items-center justify-center">{cartCount}</span>
@@ -184,6 +195,16 @@ function MesaInner() {
               <span className="flex-1 text-xs text-[#888]">{cartCount} item{cartCount !== 1 ? 's' : ''}</span>
               <span className="text-sm font-semibold">${cartTotal.toFixed(2)}</span>
               <span className="text-xs text-[#888]">Ver pedido →</span>
+            </button>
+          </div>
+        </div>
+      )}
+      {cartCount === 0 && tienePedido && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5ddd2] z-20">
+          <div className="max-w-lg mx-auto">
+            <button onClick={() => setShowCart(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 hover:bg-[#faf6f2] transition-colors">
+              <span className="text-sm font-medium">Mi pedido</span>
+              <span className="text-xs text-[#888]">→</span>
             </button>
           </div>
         </div>
@@ -201,7 +222,7 @@ function MesaInner() {
             </div>
             <div className="p-4">
               {showActivo ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => setShowActivo(false)} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} />
               ) : items.length > 0 ? (
                 <div className="space-y-4">
                   <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
@@ -213,7 +234,7 @@ function MesaInner() {
                   )}
                 </div>
               ) : tienePedido ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onClose={() => { setShowCart(false); setShowActivo(false) }} onSumarMas={() => setShowActivo(false)} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => setShowActivo(false)} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} />
               ) : (
                 <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
@@ -254,7 +275,10 @@ function MesaInner() {
               <div className="text-center space-y-3 py-4">
                 <p className="text-green-600 font-medium">¡Aviso enviado!</p>
                 <p className="text-xs text-[#888]">El mesero irá a la mesa en un momento</p>
-                <button onClick={() => setShowLlamar(false)} className="w-full h-10 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Cerrar</button>
+                <div className="flex gap-2 pt-2">
+                  <button onClick={() => { setLlamarExito(false); setLlamarMensaje('') }} className="flex-1 h-10 text-sm border border-[#e5ddd2] text-[#888] rounded-md hover:bg-[#faf6f2]">Enviar otro</button>
+                  <button onClick={() => setShowLlamar(false)} className="flex-1 h-10 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Cerrar</button>
+                </div>
               </div>
             ) : (
               <>

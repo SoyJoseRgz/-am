@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
 
 interface ItemData {
@@ -20,24 +20,29 @@ const STATUS_TAG: Record<string, string> = {
   entregado: 'ENTREG', cancelado: 'CANC',
 }
 
-export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onClose?: () => void; onSumarMas?: () => void }) {
+export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onSumarMas?: () => void; cuentaSolicitada?: boolean; onCuentaSolicitada?: () => void }) {
   const params = useParams()
   const restauranteId = props?.restauranteId || params.restauranteId
   const mesaId = props?.mesaId || params.mesaId
   const [pedidos, setPedidos] = useState<PedidoData[]>([])
   const [loading, setLoading] = useState(true)
   const [cuentaEnviando, setCuentaEnviando] = useState(false)
-  const [cuentaEnviada, setCuentaEnviada] = useState(false)
+  const [cuentaEnviada, setCuentaEnviada] = useState(props?.cuentaSolicitada || false)
   const [ivaPct, setIvaPct] = useState(16)
   const [ivaIncluido, setIvaIncluido] = useState(true)
   const [split, setSplit] = useState<'individual' | 'iguales' | 'yo_invito'>('individual')
   const [yoInvitaIdx, setYoInvitaIdx] = useState(0)
   const [tip, setTip] = useState(0)
+  const [tipCustom, setTipCustom] = useState('')
+  const [cancelandoId, setCancelandoId] = useState<number | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const user = getCurrentUser()
 
   function cargar() {
     if (!mesaId || !restauranteId) return
+    setRefreshing(true)
     api<PedidoData[] | { error: string }>(`/api/pedidos/mesa/${mesaId}`)
-      .then(data => { setPedidos(Array.isArray(data) ? data : []) }).catch(() => {}).finally(() => setLoading(false))
+      .then(data => { setPedidos(Array.isArray(data) ? data : []) }).catch(() => {}).finally(() => { setLoading(false); setTimeout(() => setRefreshing(false), 400) })
   }
 
   useEffect(() => {
@@ -67,17 +72,19 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const total = personas.reduce((s, p) => s + p.subtotal, 0)
   const iva = ivaIncluido ? total - total / (1 + ivaPct / 100) : total * ivaPct / 100
   const totalConIva = ivaIncluido ? total : total + iva
-  const tipAmount = totalConIva * tip / 100
+  const tipPct = tip === -1 ? Number(tipCustom) || 0 : tip
+  const tipAmount = totalConIva * tipPct / 100
   const granTotal = totalConIva + tipAmount
   const porPersona = split === 'iguales' && personas.length > 0 ? granTotal / personas.length : 0
+  const todosEntregados = itemsDelDia.length > 0 && itemsDelDia.every(i => i.estado === 'entregado')
 
   async function pedirCuenta() {
     setCuentaEnviando(true)
     try {
       await api(`/api/llamados/mesa/${mesaId}`, {
-        method: 'POST', body: JSON.stringify({ tipo: 'cuenta', restaurante_id: Number(restauranteId), split, tip }),
+        method: 'POST', body: JSON.stringify({ tipo: 'cuenta', restaurante_id: Number(restauranteId), split, tip: tipPct }),
       })
-      setCuentaEnviada(true)
+      setCuentaEnviada(true); props?.onCuentaSolicitada?.()
     } catch {}
     setCuentaEnviando(false)
   }
@@ -102,7 +109,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
             {/* header */}
             <div className="text-center py-3 space-y-1">
-              <p className="text-xs text-[#999] tracking-[0.2em]">- - - pedido - - -</p>
+              <p className={`text-xs text-[#999] tracking-[0.2em] transition-opacity ${refreshing ? 'opacity-40' : ''}`}>- - - pedido - - -</p>
             </div>
 
             {/* items */}
@@ -134,11 +141,28 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                         [{STATUS_TAG[item.estado] || '—'}]
                       </span>
                       <span className="text-[10px] text-[#bbb]">{item.comensal_nombre}</span>
+                      {item.estado === 'pendiente' && item.usuario_id === user.id && (
+                        <button onClick={async () => {
+                          setCancelandoId(item.id)
+                          try { await api(`/api/pedidos/${item.pedido_id}/items/${item.id}/cancelar`, { method: 'PUT' }) } catch {}
+                          setCancelandoId(null)
+                        }} disabled={cancelandoId === item.id}
+                          className="text-[10px] text-red-300 hover:text-red-500 ml-auto transition-colors">
+                          {cancelandoId === item.id ? '...' : 'cancelar'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
               })}
             </div>
+
+            {todosEntregados && (
+              <div className="text-center py-4 border-t border-dashed border-[#ddd] space-y-2">
+                <p className="text-xs text-[#888]">todo entregado</p>
+                <p className="text-[10px] text-[#aaa]">¿algo mas o pedir la cuenta?</p>
+              </div>
+            )}
 
             {/* cancelados */}
             {cancelados.length > 0 && (
@@ -190,18 +214,34 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             </div>
 
             {/* propina */}
-            <div className="flex items-center justify-between gap-2 py-1">
-              <span className="text-[11px] text-[#888]">propina:</span>
-              <div className="flex gap-1">
-                {[0, 10, 15, 20].map(t => (
-                  <button key={t} onClick={() => setTip(t)}
+            <div className="py-1 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-[#888]">propina:</span>
+                <div className="flex gap-1">
+                  {[0, 10, 15, 20].map(t => (
+                    <button key={t} onClick={() => setTip(t)}
+                      className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
+                        tip === t ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                      }`}>
+                      {t}%
+                    </button>
+                  ))}
+                  <button onClick={() => { setTip(-1); setTipCustom('') }}
                     className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                      tip === t ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                      tip === -1 ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
                     }`}>
-                    {t}%
+                    otro
                   </button>
-                ))}
+                </div>
               </div>
+              {tip === -1 && (
+                <div className="flex items-center gap-2">
+                  <input type="number" min="0" max="100" placeholder="%"
+                    value={tipCustom} onChange={e => setTipCustom(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                    className="w-16 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
+                  <span className="text-[11px] text-[#888]">%</span>
+                </div>
+              )}
             </div>
 
             {/* split */}
@@ -223,7 +263,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                     {personas.map((p, i) => {
                       const ivaShare = (p.subtotal / total) * iva
                       const tipShare = (p.subtotal / total) * tipAmount
-                      return <div key={i} className="flex justify-between"><span>{p.nombre}</span><span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span></div>
+                      const base = ivaIncluido ? p.subtotal : p.subtotal + ivaShare
+                      return <div key={i} className="flex justify-between"><span>{p.nombre}</span><span>${(base + tipShare).toFixed(2)}</span></div>
                     })}
                   </div>
                 )}

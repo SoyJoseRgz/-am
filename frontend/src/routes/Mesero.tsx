@@ -231,7 +231,6 @@ export default function Mesero() {
             <PedidoActivo
               restauranteId={String(user.restaurante_id)}
               mesaId={String(verPedido.id)}
-              onClose={() => setVerPedido(null)}
             />
           </div>
         )}

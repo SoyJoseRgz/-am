@@ -48,7 +48,16 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
   }
 
   if (success) {
-    if (props?.onSuccess) { props.onSuccess(success); return null }
+    if (props?.onSuccess) {
+      setTimeout(() => props.onSuccess!(success), 1500)
+      return (
+        <div className="text-center py-16 space-y-3">
+          <p className="text-2xl font-bold">Pedido enviado</p>
+          <p className="text-sm text-[#888]">#{success}</p>
+          <p className="text-xs text-[#aaa] animate-pulse">redirigiendo...</p>
+        </div>
+      )
+    }
     navigate(`/m/${restauranteId}/${mesaId}/pedido`, { replace: true }); return null
   }
 
