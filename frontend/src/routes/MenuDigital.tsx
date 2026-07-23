@@ -168,7 +168,7 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
       )}
 
       {/* item rows */}
-      <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
         {platillos.map(p => {
           const qty = cartQty(p.id)
           return (

@@ -47,6 +47,7 @@ function MesaInner() {
   const [codigoCopyOk, setCodigoCopyOk] = useState(false)
   const [showActivo, setShowActivo] = useState(false)
   const [cuentaSolicitada, setCuentaSolicitada] = useState(false)
+  const [pagoCompletado, setPagoCompletado] = useState(false)
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
   const [bump, setBump] = useState(false)
   const prevCount = useRef(cartCount)
@@ -127,6 +128,8 @@ function MesaInner() {
   }
 
   if (loading && !joinAttempted) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex items-center justify-center"><p className="text-[#888]">Uniéndote a la mesa...</p></div>
+  if (pagoCompletado) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Gracias por tu pago</h2><p className="text-xs text-[#888]">Tu cuenta está liquidada. Puedes salir o escanear el QR si deseas ordenar de nuevo.</p><button onClick={() => { limpiarCarrito(); navigate('/') }} className="h-10 px-6 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Salir</button></div>
+
   if (error && !mesa) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
 
   if (cuentaCerrada) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Cuenta cerrada</h2><p className="text-xs text-[#888]">Gracias por tu visita. Serás redirigido en unos segundos.</p><button onClick={() => { limpiarCarrito(); navigate('/') }} className="h-10 px-6 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Salir ahora</button></div>
@@ -215,7 +218,7 @@ function MesaInner() {
       {/* sheet de carrito */}
       {showCart && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => { setShowCart(false); setShowActivo(false) }}>
-          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
               <span className="font-semibold text-sm">
                 {showActivo ? 'Mi pedido' : items.length > 0 ? 'Revisa tu pedido' : 'Mi pedido'}
@@ -224,7 +227,7 @@ function MesaInner() {
             </div>
             <div className="p-4">
               {showActivo ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => setShowActivo(false)} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
               ) : items.length > 0 ? (
                 <div className="space-y-4">
                   <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
@@ -236,7 +239,7 @@ function MesaInner() {
                   )}
                 </div>
               ) : tienePedido ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => setShowActivo(false)} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
               ) : (
                 <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
@@ -309,7 +312,7 @@ function MesaInner() {
       {/* sheet de perfil */}
       {showPerfil && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setShowPerfil(false)}>
-          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-[85vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
               <span className="font-semibold text-sm">Mi perfil</span>
               <button onClick={() => setShowPerfil(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>

@@ -77,7 +77,7 @@ export async function findByMesa(restauranteId: number, mesaId: number) {
      FROM pedidos p
      LEFT JOIN usuarios u ON u.id = p.usuario_id
      WHERE p.restaurante_id = $1 AND p.mesa_id = $2 AND p.estado = 'activo'
-     AND EXISTS (SELECT 1 FROM pedido_items pi WHERE pi.pedido_id = p.id AND pi.estado NOT IN ('entregado','cancelado'))
+     AND EXISTS (SELECT 1 FROM pedido_items pi WHERE pi.pedido_id = p.id AND NOT pi.pagado AND pi.estado <> 'cancelado')
      ORDER BY p.created_at DESC`,
     [restauranteId, mesaId],
   )

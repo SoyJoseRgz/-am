@@ -16,7 +16,7 @@ interface PedidoData {
   created_at: string; comensal_nombre: string; items: ItemData[]
 }
 
-export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onSumarMas?: () => void; cuentaSolicitada?: boolean; onCuentaSolicitada?: () => void }) {
+export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onSumarMas?: () => void; cuentaSolicitada?: boolean; onCuentaSolicitada?: () => void; onPagoCompletado?: () => void }) {
   const params = useParams()
   const restauranteId = props?.restauranteId || params.restauranteId
   const mesaId = props?.mesaId || params.mesaId
@@ -84,7 +84,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
         body: JSON.stringify({ mesa_id: Number(mesaId), split, metodo_pago: metodo, cambio_para: cambioPara || null, tip: tipPct }),
       })
       setShowModal(false)
-      cargar()
+      cargar(); props?.onPagoCompletado?.()
     } catch {}
     setPagoEnviando(false)
   }
@@ -116,7 +116,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                     {p.nombre}
                     {p.items.every(i => i.pagado) ? <span className="text-[#aaa] ml-auto text-[10px] flex items-center gap-1">pagado</span> : ''}
                   </p>
-                  <div className="grid grid-cols-2 gap-x-3">
+                  <div className="space-y-0.5">
                     {p.items.map(item => {
                       const esPagado = item.pagado
                       const esEntregado = item.estado === 'entregado'
