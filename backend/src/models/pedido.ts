@@ -235,6 +235,7 @@ export async function marcarPagado(mesaId: number, usuarioId: number) {
     `UPDATE pedido_items SET pagado = true
      WHERE usuario_id = $1
      AND pagado = false
+     AND estado = 'entregado'
      AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $2 AND estado = 'activo')`,
     [usuarioId, mesaId],
   )
@@ -244,9 +245,23 @@ export async function marcarTodoPagado(mesaId: number) {
   await pool.query(
     `UPDATE pedido_items SET pagado = true
      WHERE pagado = false
+     AND estado = 'entregado'
      AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $1 AND estado = 'activo')`,
     [mesaId],
   )
+}
+
+export async function pendientesSinPagar(mesaId: number) {
+  const r = await pool.query(
+    `SELECT COUNT(*) as count FROM pedido_items pi
+     JOIN pedidos p ON p.id = pi.pedido_id
+     WHERE p.mesa_id = $1
+     AND p.estado = 'activo'
+     AND pi.estado = 'entregado'
+     AND pi.pagado = false`,
+    [mesaId],
+  )
+  return Number(r.rows[0]?.count || 0)
 }
 
 export async function findByItemId(itemId: number) {

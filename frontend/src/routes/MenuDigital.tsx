@@ -172,47 +172,47 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
         {platillos.map(p => {
           const qty = cartQty(p.id)
           return (
-            <div key={p.id} className={`bg-white border border-[#e5ddd2] rounded-md flex items-stretch min-h-[68px] transition ${p.agotado ? 'opacity-40' : 'hover:border-[#ccc]'}`}>
+            <div key={p.id} className={`bg-white border border-[#e5ddd2] rounded-md flex flex-col overflow-hidden transition ${p.agotado ? 'opacity-40' : 'hover:border-[#ccc]'}`}>
               {/* photo */}
-              <button onClick={() => openDetail(p)} className="shrink-0 w-[68px] overflow-hidden rounded-l-md">
+              <button onClick={() => openDetail(p)} className="w-full aspect-[4/3] overflow-hidden">
                 {p.foto_url ? (
                   <img src={p.foto_url} alt={p.nombre} className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <div className="w-full h-full bg-[#faf6f2] flex items-center justify-center">
-                    <span className="text-[#e5ddd2] text-lg font-bold">{p.nombre[0]}</span>
+                    <span className="text-[#e5ddd2] text-3xl font-bold">{p.nombre[0]}</span>
                   </div>
                 )}
               </button>
 
               {/* info */}
-              <button onClick={() => openDetail(p)} className="flex-1 min-w-0 text-left px-3 py-2.5 flex flex-col justify-center">
-                <p className="text-sm font-semibold leading-tight truncate">{p.nombre}</p>
-                {p.descripcion && <p className="text-[11px] text-[#888] mt-0.5 line-clamp-1">{p.descripcion}</p>}
-                <p className="text-sm font-bold mt-1">${p.precio}</p>
+              <button onClick={() => openDetail(p)} className="flex-1 text-left px-2.5 py-2 flex flex-col gap-0.5">
+                <p className="text-xs font-semibold leading-tight line-clamp-2">{p.nombre}</p>
+                {p.descripcion && <p className="text-[10px] text-[#888] line-clamp-1">{p.descripcion}</p>}
+                <p className="text-xs font-bold mt-auto">${p.precio}</p>
               </button>
 
               {/* action */}
-              <div className="shrink-0 flex items-center pr-3">
+              <div className="px-2.5 pb-2.5">
                 {p.agotado ? (
-                  <span className="text-[10px] text-[#bbb] uppercase tracking-wider whitespace-nowrap">agotado</span>
+                  <span className="text-[9px] text-[#bbb] uppercase tracking-wider">agotado</span>
                 ) : qty > 0 ? (
-                  <div className="flex items-center border border-[#e5ddd2] rounded-md overflow-hidden">
+                  <div className="flex items-center border border-[#e5ddd2] rounded-md overflow-hidden w-fit">
                     <button onClick={() => handleCartDecrement(p.id)}
-                      className="w-8 h-8 flex items-center justify-center text-base leading-none hover:bg-[#faf6f2] transition-colors">−</button>
-                    <span className="w-7 text-xs font-semibold text-center">{qty}</span>
+                      className="w-7 h-7 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">−</button>
+                    <span className="w-6 text-[11px] font-semibold text-center">{qty}</span>
                     <button onClick={() => handleCartIncrement(p.id)}
-                      className="w-8 h-8 flex items-center justify-center text-base leading-none hover:bg-[#faf6f2] transition-colors">+</button>
+                      className="w-7 h-7 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">+</button>
                   </div>
                 ) : (
                   <button onClick={() => handleQuickAdd(p)}
-                    className="w-8 h-8 bg-[#111] text-white rounded-md text-xl leading-none flex items-center justify-center hover:bg-[#000] transition-colors">+</button>
+                    className="w-full h-8 bg-[#111] text-white rounded-md text-sm flex items-center justify-center hover:bg-[#000] transition-colors">+</button>
                 )}
               </div>
             </div>
           )
         })}
         {platillos.length === 0 && (
-          <p className="text-[#aaa] text-center py-8 text-sm">Sin resultados</p>
+          <p className="text-[#aaa] text-center py-8 text-sm col-span-2">Sin resultados</p>
         )}
       </div>
 

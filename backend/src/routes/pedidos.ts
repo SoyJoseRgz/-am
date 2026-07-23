@@ -80,6 +80,13 @@ export default async function pedidoRoutes(app: FastifyInstance) {
 
     app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('item:pagado', { usuarioId, split })
     app.io.to(`room:restaurante:${restauranteId}`).emit('item:pagado', { mesaId: mesa_id, usuarioId, split })
+
+    const pendientes = await Pedido.pendientesSinPagar(Number(mesa_id))
+    if (pendientes === 0) {
+      await Mesa.setEstado(Number(mesa_id), 'limpiando')
+      app.io.to(`room:restaurante:${restauranteId}`).emit('mesa:actualizada', { mesaId: mesa_id, estado: 'limpiando' })
+    }
+
     return { success: true }
   })
 }

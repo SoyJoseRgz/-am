@@ -54,22 +54,23 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   }, [mesaId, restauranteId])
 
   const allItems = pedidos.flatMap(p => p.items)
-  const activos = allItems.filter(i => i.estado !== 'cancelado')
   const cancelados = allItems.filter(i => i.estado === 'cancelado')
 
-  const groups: Record<number, { nombre: string; items: ItemData[] }> = {}
-  for (const item of activos) {
+  const groups: Record<number, { nombre: string; preparando: ItemData[]; entregados: ItemData[] }> = {}
+  for (const item of allItems) {
+    if (item.estado === 'cancelado') continue
     const uid = item.usuario_id || 0
-    if (!groups[uid]) groups[uid] = { nombre: item.comensal_nombre || 'Comensal', items: [] }
-    groups[uid].items.push(item)
+    if (!groups[uid]) groups[uid] = { nombre: item.comensal_nombre || 'Comensal', preparando: [], entregados: [] }
+    if (item.estado === 'entregado') groups[uid].entregados.push(item)
+    else groups[uid].preparando.push(item)
   }
   const personas = Object.values(groups)
 
-  const userGroup = personas.find(p => p.items[0]?.usuario_id === user.id)
-  const userItemsNoPagados = userGroup?.items.filter(i => !i.pagado) || []
+  const userGroup = personas.find(p => p.entregados[0]?.usuario_id === user.id || p.preparando[0]?.usuario_id === user.id)
+  const userItemsNoPagados = userGroup?.entregados.filter(i => !i.pagado) || []
   const userSubtotal = userItemsNoPagados.reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
-  const todosPagados = personas.every(p => p.items.every(i => i.pagado))
-  const total = activos.filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
+  const todosPagados = personas.every(p => p.entregados.every(i => i.pagado))
+  const total = personas.flatMap(p => p.entregados).filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
   const tipPct = tip === -1 ? Number(tipCustom) || 0 : tip
   const tipAmount = total * tipPct / 100
   const granTotal = total + tipAmount
@@ -91,7 +92,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
   if (loading) return <p className="text-center text-sm text-[#888] font-mono py-6">cargando..</p>
 
-  const noHay = activos.length === 0 && cancelados.length === 0
+  const noHay = personas.length === 0 && cancelados.length === 0
 
   return (
     <div className="font-mono text-sm leading-relaxed space-y-4">
@@ -114,33 +115,56 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                   <p className="text-[11px] text-[#bbb] tracking-[0.15em] uppercase mb-2 flex items-center gap-1.5">
                     <User className="w-3 h-3" />
                     {p.nombre}
-                    {p.items.every(i => i.pagado) ? <span className="text-[#aaa] ml-auto text-[10px] flex items-center gap-1">pagado</span> : ''}
+                    {p.entregados.length > 0 && p.entregados.every(i => i.pagado) && p.preparando.length === 0
+                      ? <span className="text-[#aaa] ml-auto text-[10px] flex items-center gap-1">pagado</span>
+                      : ''}
                   </p>
-                  <div className="space-y-0.5">
-                    {p.items.map(item => {
-                      const esPagado = item.pagado
-                      const esEntregado = item.estado === 'entregado'
-                      return (
-                        <div key={item.id} className={`flex items-baseline justify-between gap-1 py-0.5 ${esPagado ? 'text-[#ddd]' : esEntregado ? 'text-[#bbb]' : 'text-[#111]'}`}>
-                          <div className="flex items-baseline gap-1 min-w-0">
-                            {esPagado && <span className="text-[10px] text-[#ccc] shrink-0">✓</span>}
-                            <span className="font-medium shrink-0">{item.cantidad}</span>
-                            <span className="truncate text-[11px]">{item.nombre}</span>
+
+                  {p.preparando.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-[10px] text-[#ccc] tracking-wider uppercase mb-1">en preparación</p>
+                      <div className="space-y-0.5">
+                        {p.preparando.map(item => (
+                          <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-[#ccc]">
+                            <div className="flex items-baseline gap-1 min-w-0">
+                              <span className="font-medium shrink-0">{item.cantidad}</span>
+                              <span className="truncate text-[11px] italic">{item.nombre}</span>
+                            </div>
                           </div>
-                          <span className="shrink-0 text-[11px]">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                  <div className="flex items-baseline justify-between text-[11px] text-[#888] pt-1 mt-1 border-t border-dotted border-[#eee]">
-                    <span>subtotal</span>
-                    <span>${p.items.filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0).toFixed(2)}</span>
-                  </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {p.entregados.length > 0 && (
+                    <>
+                      {p.preparando.length > 0 && <div className="border-t border-dotted border-[#eee] mb-2" />}
+                      <div className="space-y-0.5">
+                        {p.entregados.map(item => {
+                          const esPagado = item.pagado
+                          return (
+                            <div key={item.id} className={`flex items-baseline justify-between gap-1 py-0.5 ${esPagado ? 'text-[#ddd]' : 'text-[#111]'}`}>
+                              <div className="flex items-baseline gap-1 min-w-0">
+                                {esPagado && <span className="text-[10px] text-[#ccc] shrink-0">✓</span>}
+                                <span className="font-medium shrink-0">{item.cantidad}</span>
+                                <span className="truncate text-[11px]">{item.nombre}</span>
+                              </div>
+                              {!esPagado && <span className="shrink-0 text-[11px]">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>}
+                            </div>
+                          )
+                        })}
+                      </div>
+                      <div className="flex items-baseline justify-between text-[11px] text-[#888] pt-1 mt-1 border-t border-dotted border-[#eee]">
+                        <span>subtotal</span>
+                        <span>${p.entregados.filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0).toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
 
-            {!todosPagados && !userGroup?.items.every(i => i.pagado) && userItemsNoPagados.length > 0 && (
+            {!todosPagados && userItemsNoPagados.length > 0 && (
               <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 space-y-2">
                 <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase text-center flex items-center justify-center gap-1">
                   <Wallet className="w-3 h-3" /> - - - pagar - - -
