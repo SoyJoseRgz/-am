@@ -15,7 +15,10 @@ interface PedidoData {
   created_at: string; comensal_nombre: string; items: ItemData[]
 }
 
-const ESTADO_ICO: Record<string, string> = { pendiente: '🟡', preparando: '🔵', listo: '🟢', entregado: '⚫', cancelado: '🔴' }
+const STATUS_TAG: Record<string, string> = {
+  pendiente: 'PEND', preparando: 'PREP', listo: 'LISTO',
+  entregado: 'ENTREG', cancelado: 'CANC',
+}
 
 export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onClose?: () => void; onSumarMas?: () => void }) {
   const params = useParams()
@@ -34,8 +37,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   function cargar() {
     if (!mesaId || !restauranteId) return
     api<PedidoData[] | { error: string }>(`/api/pedidos/mesa/${mesaId}`)
-      .then(data => { setPedidos(Array.isArray(data) ? data : []) })
-      .catch(() => {}).finally(() => setLoading(false))
+      .then(data => { setPedidos(Array.isArray(data) ? data : []) }).catch(() => {}).finally(() => setLoading(false))
   }
 
   useEffect(() => {
@@ -80,150 +82,196 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     setCuentaEnviando(false)
   }
 
-  if (loading) return <p className="text-[#888] text-sm text-center py-6">Cargando...</p>
+  if (loading) return <p className="text-center text-sm text-[#888] font-mono py-6">cargando..</p>
+
+  const noHay = itemsDelDia.length === 0 && cancelados.length === 0
 
   return (
-    <div className="space-y-4">
-      {itemsDelDia.length === 0 && cancelados.length === 0 ? (
+    <div className="font-mono text-sm leading-relaxed space-y-4">
+
+      {noHay ? (
         <div className="text-center py-10 space-y-4">
-          <p className="text-[#888] text-sm">No hay pedidos activos</p>
-          <button onClick={() => props?.onSumarMas?.()} className="bg-[#111] text-white px-6 py-2 rounded-md text-sm">Ver menú</button>
+          <p className="text-[#888]">no hay pedidos activos</p>
+          <button onClick={() => props?.onSumarMas?.()}
+            className="text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline">menu</button>
         </div>
       ) : (
         <>
-          {/* ticket items */}
-          <div className="bg-white border border-[#e5ddd2] rounded-lg overflow-hidden">
-            <div className="px-4 py-3 border-b border-dashed border-[#e5ddd2] text-center">
-              <p className="text-[10px] text-[#888] uppercase tracking-widest">— Pedido —</p>
+          {/* ticket */}
+          <div className="bg-white">
+
+            {/* header */}
+            <div className="text-center py-3 space-y-1">
+              <p className="text-xs text-[#999] tracking-[0.2em]">- - - pedido - - -</p>
             </div>
-            <div className="divide-y divide-dashed divide-[#e5ddd2]">
-              {itemsDelDia.map(item => (
-                <div key={item.id} className="px-4 py-2.5 flex items-start gap-3">
-                  <span className="shrink-0 text-xs leading-5">{ESTADO_ICO[item.estado] || '⚪'}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <p className="text-sm font-medium truncate">
-                        {item.cantidad > 1 && <span className="text-[#888]">{item.cantidad}x </span>}
-                        {item.nombre}
-                      </p>
-                      <span className="text-sm font-semibold shrink-0">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
+
+            {/* items */}
+            <div className="divide-y divide-dashed divide-[#ddd]">
+              {itemsDelDia.map(item => {
+                const esEntregado = item.estado === 'entregado'
+                return (
+                  <div key={item.id} className={`py-2.5 ${esEntregado ? 'text-[#bbb]' : 'text-[#111]'}`}>
+                    <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="font-medium shrink-0">{item.cantidad}</span>
+                        <span className="truncate">{item.nombre}</span>
+                      </div>
+                      <span className={`shrink-0 ${esEntregado ? '' : 'font-medium'}`}>
+                        ${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}
+                      </span>
                     </div>
                     {item.modificadores.length > 0 && (
-                      <p className="text-[11px] text-[#aaa]">{item.modificadores.map(m => m.nombre).join(', ')}</p>
+                      <p className="text-[11px] text-[#aaa] mt-0.5 ml-5">{item.modificadores.map(m => m.nombre).join(', ')}</p>
                     )}
-                    {item.notas && <p className="text-[11px] text-[#aaa] italic">📝 {item.notas}</p>}
-                    <p className="text-[10px] text-[#bbb] mt-0.5">{item.comensal_nombre}</p>
+                    {item.notas && <p className="text-[11px] text-[#aaa] mt-0.5 ml-5">* {item.notas}</p>}
+                    <div className="flex items-center gap-2 mt-1 ml-5">
+                      <span className={`text-[10px] tracking-wider uppercase ${
+                        item.estado === 'pendiente' ? 'text-[#111] font-bold' :
+                        item.estado === 'preparando' ? 'text-[#555] font-medium' :
+                        item.estado === 'listo' ? 'text-[#666]' :
+                        'text-[#ccc]'
+                      }`}>
+                        [{STATUS_TAG[item.estado] || '—'}]
+                      </span>
+                      <span className="text-[10px] text-[#bbb]">{item.comensal_nombre}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
+
+            {/* cancelados */}
             {cancelados.length > 0 && (
-              <details className="border-t border-dashed border-[#e5ddd2]">
-                <summary className="px-4 py-2 text-xs text-[#bbb] cursor-pointer hover:text-[#888] transition-colors">
-                  Cancelados ({cancelados.length})
+              <details className="border-t border-dashed border-[#ddd]">
+                <summary className="py-2 text-[11px] text-[#bbb] cursor-pointer hover:text-[#888] tracking-wider uppercase text-center">
+                  [{cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}]
                 </summary>
-                <div className="px-4 pb-2 space-y-1">
+                <div className="pb-2 space-y-1">
                   {cancelados.map(item => (
-                    <p key={item.id} className="text-[11px] text-[#ccc] line-through">
-                      {item.cantidad}x {item.nombre}
+                    <p key={item.id} className="text-[11px] text-[#ddd] line-through">
+                      {item.cantidad} {item.nombre}
                     </p>
                   ))}
                 </div>
               </details>
             )}
+
+            {/* agregar */}
+            <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 text-center">
+              <button onClick={() => props?.onSumarMas?.()}
+                className="text-[11px] text-[#888] underline underline-offset-2 decoration-dotted hover:text-[#111] uppercase tracking-wider">
+                + agregar mas
+              </button>
+            </div>
           </div>
 
-          {/* sumar + */}
-          <button onClick={() => props?.onSumarMas?.()}
-            className="w-full h-10 text-sm border border-dashed border-[#e5ddd2] text-[#888] hover:text-[#111] hover:border-[#888] rounded-md transition flex items-center justify-center gap-1">
-            + Agregar más
-          </button>
+          {/* cuenta */}
+          <div className="bg-white py-3 space-y-2">
+            <div className="text-center text-[10px] text-[#999] tracking-[0.2em]">- - - cuenta - - -</div>
 
-          {/* totes y cuenta */}
-          <div className="bg-white border border-[#e5ddd2] rounded-lg p-4 space-y-2 text-sm">
             {personas.map((p, i) => (
-              <div key={i} className="flex justify-between text-[#888]">
-                <span>{p.nombre}</span>
+              <div key={i} className="flex justify-between text-sm">
+                <span className="text-[#666]">{p.nombre}</span>
                 <span>${p.subtotal.toFixed(2)}</span>
               </div>
             ))}
-            <div className="border-t border-dashed border-[#e5ddd2] pt-2 mt-2 space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-[#888]">Subtotal</span>
-                <span className="font-medium">${total.toFixed(2)}</span>
+
+            <div className="border-t border-dashed border-[#ddd] pt-2 mt-2 space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#888]">subtotal</span>
+                <span>${total.toFixed(2)}</span>
               </div>
               {!ivaIncluido && (
-                <div className="flex justify-between">
-                  <span className="text-[#888]">IVA ({ivaPct}%)</span>
-                  <span className="font-medium">${iva.toFixed(2)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#888]">iva ({ivaPct}%)</span>
+                  <span>${iva.toFixed(2)}</span>
                 </div>
               )}
-              {/* propina */}
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-[#888] text-xs">Propina:</span>
-                  {[0, 10, 15, 20].map(t => (
-                    <button key={t} onClick={() => setTip(t)}
-                      className={`text-xs px-2 py-0.5 rounded border ${tip === t ? 'bg-[#111] text-white border-[#111]' : 'border-[#e5ddd2] text-[#888] hover:border-[#888]'} transition`}>
-                      {t}%
-                    </button>
-                  ))}
-                </div>
-                {tip > 0 && <span className="font-medium text-xs">+${tipAmount.toFixed(2)}</span>}
-              </div>
-              {/* split */}
-              {personas.length > 1 && (
-                <div className="flex items-center gap-1.5 pt-1">
-                  <span className="text-[#888] text-xs">Dividir:</span>
-                  {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                    <button key={s} onClick={() => setSplit(s)}
-                      className={`text-xs px-2 py-0.5 rounded border ${split === s ? 'bg-[#111] text-white border-[#111]' : 'border-[#e5ddd2] text-[#888] hover:border-[#888]'} transition`}>
-                      {s === 'individual' ? 'Individual' : s === 'iguales' ? 'Iguales' : 'Yo invito'}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {split === 'individual' && (
-                <div className="text-xs text-[#888] space-y-0.5">
-                  {personas.map((p, i) => {
-                    const ivaShare = (p.subtotal / total) * iva
-                    const tipShare = (p.subtotal / total) * tipAmount
-                    return <div key={i} className="flex justify-between"><span>{p.nombre}</span><span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span></div>
-                  })}
-                </div>
-              )}
-              {split === 'iguales' && <div className="flex justify-between text-xs text-[#888]"><span>Cada quien</span><span className="font-semibold">${porPersona.toFixed(2)}</span></div>}
-              {split === 'yo_invito' && (
-                <div className="space-y-1">
-                  <div className="flex gap-1 flex-wrap">
-                    {personas.map((p, i) => (
-                      <button key={i} onClick={() => setYoInvitaIdx(i)}
-                        className={`text-xs px-2 py-0.5 rounded border ${yoInvitaIdx === i ? 'bg-[#111] text-white border-[#111]' : 'border-[#e5ddd2] text-[#888]'} transition`}>
-                        {p.nombre}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="text-xs text-[#888] space-y-0.5">
-                    {personas.map((p, i) => (
-                      <div key={i} className="flex justify-between">
-                        <span>{p.nombre}</span>
-                        <span className={i === yoInvitaIdx ? 'font-semibold' : ''}>{i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="flex justify-between text-base font-bold border-t border-[#e5ddd2] pt-3">
-                <span>Total</span>
-                <span>${granTotal.toFixed(2)}</span>
+            </div>
+
+            {/* propina */}
+            <div className="flex items-center justify-between gap-2 py-1">
+              <span className="text-[11px] text-[#888]">propina:</span>
+              <div className="flex gap-1">
+                {[0, 10, 15, 20].map(t => (
+                  <button key={t} onClick={() => setTip(t)}
+                    className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
+                      tip === t ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                    }`}>
+                    {t}%
+                  </button>
+                ))}
               </div>
             </div>
 
+            {/* split */}
+            {personas.length > 1 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-[#888]">split:</span>
+                  {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
+                    <button key={s} onClick={() => setSplit(s)}
+                      className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
+                        split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                      }`}>
+                      {s === 'individual' ? 'c/u' : s === 'iguales' ? 'iguales' : 'invito'}
+                    </button>
+                  ))}
+                </div>
+                {split === 'individual' && (
+                  <div className="text-[11px] text-[#888] space-y-0.5">
+                    {personas.map((p, i) => {
+                      const ivaShare = (p.subtotal / total) * iva
+                      const tipShare = (p.subtotal / total) * tipAmount
+                      return <div key={i} className="flex justify-between"><span>{p.nombre}</span><span>${(p.subtotal + ivaShare + tipShare).toFixed(2)}</span></div>
+                    })}
+                  </div>
+                )}
+                {split === 'iguales' && (
+                  <div className="flex justify-between text-[11px] text-[#888]">
+                    <span>cada quien</span>
+                    <span className="font-medium text-[#111]">${porPersona.toFixed(2)}</span>
+                  </div>
+                )}
+                {split === 'yo_invito' && (
+                  <div className="space-y-1">
+                    <div className="flex gap-1 flex-wrap">
+                      {personas.map((p, i) => (
+                        <button key={i} onClick={() => setYoInvitaIdx(i)}
+                          className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
+                            yoInvitaIdx === i ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                          }`}>
+                          {p.nombre}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="text-[11px] text-[#888] space-y-0.5">
+                      {personas.map((p, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span>{p.nombre}</span>
+                          <span className={i === yoInvitaIdx ? 'font-medium text-[#111]' : ''}>
+                            {i === yoInvitaIdx ? `$${granTotal.toFixed(2)}` : '$0.00'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="border-t border-dashed border-[#ddd] pt-3 mt-2 flex justify-between text-base font-bold">
+              <span>total</span>
+              <span>${granTotal.toFixed(2)}</span>
+            </div>
+
             <button onClick={pedirCuenta} disabled={cuentaEnviando || cuentaEnviada || personas.length === 0}
-              className={`w-full h-11 text-sm rounded-md font-semibold transition mt-3 ${
-                cuentaEnviada ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-[#111] hover:bg-[#000] text-white'
+              className={`w-full py-3 text-sm font-medium mt-3 transition ${
+                cuentaEnviada
+                  ? 'text-[#999]'
+                  : 'text-[#111] bg-white border-2 border-[#111] hover:bg-[#111] hover:text-white'
               }`}>
-              {cuentaEnviada ? '✓ Cuenta solicitada' : `Pedir cuenta — $${granTotal.toFixed(2)}`}
+              {cuentaEnviada ? '[ SOLICITADA ]' : `pedir cuenta — $${granTotal.toFixed(2)}`}
             </button>
           </div>
         </>

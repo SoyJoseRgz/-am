@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Users, X, Bell, LogOut, Copy, Check } from 'lucide-react'
+import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
 import { Input } from '../components/ui/input'
 import { Separator } from '../components/ui/separator'
 import { api, getCurrentUser } from '../services/api'
@@ -126,11 +126,11 @@ function MesaInner() {
       {/* header */}
       <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-lg font-medium shrink-0">Mesa {mesa.numero}</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-base font-medium shrink-0">Mesa {mesa.numero}</h1>
             {codigoInvitacion && (
               <button onClick={async () => {
-                const text = `🧑‍🍳 Únete a mi mesa con el código: ${codigoInvitacion}`
+                const text = `Únete a mi mesa con el código: ${codigoInvitacion}`
                 if (navigator.share) {
                   try { await navigator.share({ title: 'Código de invitación', text }) } catch {}
                 } else {
@@ -138,9 +138,13 @@ function MesaInner() {
                   setCodigoCopyOk(true)
                   setTimeout(() => setCodigoCopyOk(false), 2000)
                 }
-              }} className="flex items-center gap-1 h-6 px-2 rounded-md border border-[#e5ddd2] bg-white text-[10px] font-mono text-[#888] hover:text-[#111] hover:border-[#888] transition-colors shrink-0">
-                {codigoCopyOk ? <Check className="w-2.5 h-2.5 text-green-500" /> : <Copy className="w-2.5 h-2.5" />}
-                {codigoInvitacion}
+              }} className="flex items-center gap-1 font-mono text-[11px] text-[#888] hover:text-[#111] transition-colors shrink-0 whitespace-nowrap">
+                <span className="text-[9px] text-[#bbb] uppercase tracking-wider">codigo</span>
+                {codigoCopyOk ? (
+                  <span className="text-green-500 font-medium">copiado</span>
+                ) : (
+                  <span className="border-b border-dotted border-[#ccc] hover:border-[#888] font-medium">{codigoInvitacion}</span>
+                )}
               </button>
             )}
           </div>
