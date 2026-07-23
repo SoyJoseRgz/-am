@@ -22,6 +22,14 @@ export async function findByRestaurante(restauranteId: number) {
   return r.rows
 }
 
+export async function findAllByRestaurante(restauranteId: number) {
+  const r = await pool.query<Platillo>(
+    'SELECT * FROM platillos WHERE restaurante_id = $1 ORDER BY categoria_id, id',
+    [restauranteId],
+  )
+  return r.rows
+}
+
 export async function findById(id: number) {
   const r = await pool.query<Platillo>('SELECT * FROM platillos WHERE id = $1', [id])
   return r.rows[0] || null

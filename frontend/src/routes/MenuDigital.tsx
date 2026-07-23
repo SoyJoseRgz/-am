@@ -38,6 +38,8 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
   restauranteId: string; usuarioId: number; usuarioNombre: string
 }) {
   const [cats, setCats] = useState<CategoriaMenu[]>([])
+  const [loadingMenu, setLoadingMenu] = useState(true)
+  const [menuError, setMenuError] = useState('')
   const [activeCat, setActiveCat] = useState(0)
   const [search, setSearch] = useState('')
   const [sel, setSel] = useState<PlatilloItem | null>(null)
@@ -45,11 +47,14 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
   const [nota, setNota] = useState('')
   const [cant, setCant] = useState(1)
   const tabsRef = useRef<HTMLDivElement>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
   const { items, addItem, updateCantidad, removeItem } = useCart()
 
   useEffect(() => {
+    setLoadingMenu(true); setMenuError('')
     api<{ categorias: CategoriaMenu[] }>(`/api/restaurantes/${restauranteId}/menu`)
-      .then(d => { setCats(d.categorias) })
+      .then(d => { setCats(d.categorias); setLoadingMenu(false) })
+      .catch(() => { setMenuError('Error al cargar el menú'); setLoadingMenu(false) })
   }, [restauranteId])
 
   const filtered = useMemo(() => cats.map(c => ({
@@ -157,7 +162,7 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
       {!search && (
         <div ref={tabsRef} className="flex gap-2 overflow-x-auto pb-3 snap-x scrollbar-none">
           {cats.map((c, i) => (
-            <button key={c.id} onClick={() => { setActiveCat(i); setSel(null) }}
+            <button key={c.id} onClick={() => { setActiveCat(i); setSel(null); gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
               className={`snap-start shrink-0 h-10 px-5 rounded-full text-sm font-medium transition whitespace-nowrap ${
                 i === activeCat ? 'bg-[#111] text-white' : 'bg-white border border-[#e5ddd2] text-[#888] hover:text-[#111]'
               }`}>
@@ -168,20 +173,44 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
       )}
 
       {/* item rows */}
+      <div ref={gridRef}>
+      {loadingMenu ? (
+        <div className="grid grid-cols-2 gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white border border-[#e5ddd2] rounded-md overflow-hidden animate-pulse">
+              <div className="w-full aspect-[4/3] bg-[#f0ebe3]" />
+              <div className="p-2.5 space-y-2">
+                <div className="h-3 bg-[#f0ebe3] rounded w-3/4" />
+                <div className="h-2 bg-[#f0ebe3] rounded w-1/2" />
+                <div className="h-3 bg-[#f0ebe3] rounded w-1/4" />
+              </div>
+              <div className="px-2.5 pb-2.5">
+                <div className="h-8 bg-[#f0ebe3] rounded-md" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : menuError ? (
+        <div className="text-center py-10 col-span-2">
+          <p className="text-[#888] text-sm">{menuError}</p>
+          <button onClick={() => { setLoadingMenu(true); setMenuError(''); api<{ categorias: CategoriaMenu[] }>(`/api/restaurantes/${restauranteId}/menu`).then(d => { setCats(d.categorias); setLoadingMenu(false) }).catch(() => { setMenuError('Error al cargar el menú'); setLoadingMenu(false) }) }}
+            className="text-[11px] text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline mt-2">reintentar</button>
+        </div>
+      ) : (
       <div className="grid grid-cols-2 gap-2">
         {platillos.map(p => {
           const qty = cartQty(p.id)
           return (
             <div key={p.id} className={`bg-white border border-[#e5ddd2] rounded-md flex flex-col overflow-hidden transition ${p.agotado ? 'opacity-40' : 'hover:border-[#ccc]'}`}>
               {/* photo */}
-              <button onClick={() => openDetail(p)} className="w-full aspect-[4/3] overflow-hidden">
-                {p.foto_url ? (
-                  <img src={p.foto_url} alt={p.nombre} className="w-full h-full object-cover" loading="lazy" />
-                ) : (
-                  <div className="w-full h-full bg-[#faf6f2] flex items-center justify-center">
-                    <span className="text-[#e5ddd2] text-3xl font-bold">{p.nombre[0]}</span>
-                  </div>
+              <button onClick={() => openDetail(p)} className="w-full aspect-[4/3] overflow-hidden relative">
+                {p.foto_url && (
+                  <img src={p.foto_url} alt={p.nombre} className="absolute inset-0 w-full h-full object-cover" loading="lazy"
+                    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }} />
                 )}
+                <div className={`absolute inset-0 w-full h-full bg-[#faf6f2] flex items-center justify-center ${p.foto_url ? 'hidden' : ''}`}>
+                  <span className="text-[#e5ddd2] text-3xl font-bold">{p.nombre[0]}</span>
+                </div>
               </button>
 
               {/* info */}
@@ -214,6 +243,8 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
         {platillos.length === 0 && (
           <p className="text-[#aaa] text-center py-8 text-sm col-span-2">Sin resultados</p>
         )}
+      </div>
+      )}
       </div>
 
       {/* detail sheet */}
@@ -266,7 +297,7 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
                     <div className="flex items-center border border-[#e5ddd2] rounded-lg overflow-hidden">
                       <button onClick={() => setCant(c => Math.max(1, c - 1))} className="w-10 h-10 flex items-center justify-center text-base hover:bg-[#faf6f2]">−</button>
                       <span className="w-9 text-sm font-semibold text-center">{cant}</span>
-                      <button onClick={() => setCant(c => c + 1)} className="w-10 h-10 flex items-center justify-center text-base hover:bg-[#faf6f2]">+</button>
+                      <button onClick={() => setCant(c => Math.min(99, c + 1))} className="w-10 h-10 flex items-center justify-center text-base hover:bg-[#faf6f2]">+</button>
                     </div>
                     <button onClick={() => handleAdd(sel)} className="flex-1 h-10 bg-[#111] hover:bg-[#000] text-white rounded-lg font-semibold text-sm transition">
                       Agregar ${totalPrecio(sel).toFixed(2)}

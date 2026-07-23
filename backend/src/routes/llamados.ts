@@ -8,19 +8,16 @@ export default async function llamadosRoutes(app: FastifyInstance) {
     async (req, reply) => {
       const usuarioId = req.user!.userId
       const mesaId = parseInt(req.params.mesaId)
-      const { tipo, mensaje, split, tip } = req.body
+      const { tipo, mensaje, split: splitPref, tip } = req.body
 
       const mesa = await pool.query('SELECT restaurante_id FROM mesas WHERE id = $1', [mesaId])
       if (mesa.rows.length === 0) return reply.status(404).send({ error: 'Mesa no encontrada' })
       const restauranteId = mesa.rows[0].restaurante_id
 
-      const extra = split ? JSON.stringify({ split, tip }) : null
-      const mensajeFinal = extra ? (mensaje ? mensaje + ' ||| ' + extra : extra) : mensaje || null
-
       const r = await pool.query(
-        `INSERT INTO llamados (restaurante_id, mesa_id, usuario_id, tipo, mensaje)
-         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-        [restauranteId, mesaId, usuarioId, tipo, mensajeFinal],
+        `INSERT INTO llamados (restaurante_id, mesa_id, usuario_id, tipo, mensaje, split_preference, tip_preference)
+         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [restauranteId, mesaId, usuarioId, tipo, mensaje || null, splitPref || null, tip || null],
       )
 
       const llamado = r.rows[0]

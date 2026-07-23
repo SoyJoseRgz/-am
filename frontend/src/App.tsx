@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { QrCode, User } from 'lucide-react'
-import { api } from './services/api'
+import { api, clearAppData } from './services/api'
 import Mesa from './routes/Mesa'
 import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
@@ -35,7 +35,8 @@ function redirectPorRol(rol: string) {
 function Home() {
   const navigate = useNavigate()
   const userStr = localStorage.getItem('user')
-  const user = userStr ? JSON.parse(userStr) : null
+  let user: any = null
+  try { user = userStr ? JSON.parse(userStr) : null } catch {}
   const [perfilOpen, setPerfilOpen] = useState(false)
   const [editNombre, setEditNombre] = useState(user?.nombre || '')
   const [editFecha, setEditFecha] = useState(user?.fecha_nacimiento || '')
@@ -208,7 +209,7 @@ function Home() {
             <div className="px-5 py-4 border-t border-[#e5ddd2]">
               <Button
                 variant="outline"
-                onClick={() => { localStorage.clear(); navigate('/login') }}
+                onClick={() => { clearAppData(); navigate('/login') }}
                 className="w-full h-10 text-sm border-[#e5ddd2] text-[#888] hover:text-red-500 hover:border-red-200"
               >
                 Cerrar sesión

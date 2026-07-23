@@ -54,7 +54,16 @@ export async function remove(restauranteId: number, id: number) {
   await pool.query('DELETE FROM mesas WHERE id = $1 AND restaurante_id = $2', [id, restauranteId])
 }
 
-export async function setEstado(id: number, estado: string) {
+export async function setEstado(restauranteId: number, id: number, estado: string) {
+  const r = await pool.query<Mesa>(
+    'UPDATE mesas SET estado = $1 WHERE id = $2 AND restaurante_id = $3 RETURNING *',
+    [estado, id, restauranteId],
+  )
+  return r.rows[0]
+}
+
+/** Sin filtro de restaurante_id — usar solo en contextos donde ya se verificó pertenencia */
+export async function setEstadoDirect(id: number, estado: string) {
   const r = await pool.query<Mesa>(
     'UPDATE mesas SET estado = $1 WHERE id = $2 RETURNING *',
     [estado, id],

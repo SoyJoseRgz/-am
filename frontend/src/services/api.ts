@@ -5,6 +5,15 @@ export function getCurrentUser() {
   try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} }
 }
 
+export function clearAppData() {
+  const appKeys = ['accessToken', 'refreshToken', 'user']
+  Object.keys(localStorage).forEach(k => {
+    if (appKeys.includes(k) || k.startsWith('cart_') || k.startsWith('lastMesa_')) {
+      localStorage.removeItem(k)
+    }
+  })
+}
+
 export async function api<T = any>(path: string, options: RequestInit = {}) {
   return doFetch<T>(path, options)
 }
@@ -24,7 +33,7 @@ async function doFetch<T>(path: string, options: RequestInit, isRetry = false): 
   if (res.status === 401 && !isRetry) {
     const refreshed = await refreshToken()
     if (refreshed) return doFetch<T>(path, options, true)
-    localStorage.clear()
+    clearAppData()
     window.location.href = '/login'
     throw new Error('Sesión expirada')
   }

@@ -6,7 +6,7 @@ interface Mesa {
   id: number; restaurante_id: number; numero: number; qr_code: string | null; estado: string
 }
 
-const estados: Record<string, string> = { libre: '🟢', ocupada: '🔴', unida: '🟡', limpiando: '🟤' }
+const estados: Record<string, string> = { libre: '🟢', ocupada: '🔴', unida: '🟡', pagada: '🔵', limpiando: '🟤' }
 
 export default function AdminMesas() {
   const [mesas, setMesas] = useState<Mesa[]>([])
@@ -24,7 +24,8 @@ export default function AdminMesas() {
     load()
     socket.on('mesa:estado', load)
     socket.on('mesa:unida', load)
-    return () => { socket.off('mesa:estado', load); socket.off('mesa:unida', load) }
+    socket.on('pedido:nuevo', load)
+    return () => { socket.off('mesa:estado', load); socket.off('mesa:unida', load); socket.off('pedido:nuevo', load) }
   }, [])
 
   async function save() {

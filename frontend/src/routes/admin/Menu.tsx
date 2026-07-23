@@ -23,6 +23,7 @@ function CatForm({ editing, onDone }: { editing: Categoria | null; onDone: () =>
   const [error, setError] = useState('')
 
   async function save() {
+    if (!nombre.trim()) { setError('Nombre requerido'); return }
     setError('')
     try {
       if (editing) {

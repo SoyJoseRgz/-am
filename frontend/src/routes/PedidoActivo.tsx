@@ -45,19 +45,26 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const [metodo, setMetodo] = useState<'efectivo' | 'deposito'>('efectivo')
   const [cambioPara, setCambioPara] = useState('')
   const [pagoEnviando, setPagoEnviando] = useState(false)
+  const [pagoError, setPagoError] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [depositoInfo, setDepositoInfo] = useState<{ banco: string; clabe: string; numero_tarjeta?: string; titular: string } | null>(null)
+  const [ivaPct, setIvaPct] = useState(16)
+  const [ivaIncluido, setIvaIncluido] = useState(true)
   const user = getCurrentUser()
 
   useEffect(() => {
-    api<any>(`/api/restaurantes/${restauranteId}/menu`).then(d => setDepositoInfo(d.deposito_info || null)).catch(() => {})
+    api<any>(`/api/restaurantes/${restauranteId}/menu`).then(d => {
+      setDepositoInfo(d.deposito_info || null)
+      if (d.iva_porcentaje != null) setIvaPct(d.iva_porcentaje)
+      if (d.iva_incluido != null) setIvaIncluido(d.iva_incluido)
+    }).catch(() => {})
   }, [restauranteId])
 
   function cargar() {
     if (!mesaId || !restauranteId) return
     setRefreshing(true)
     api<PedidoData[] | { error: string }>(`/api/pedidos/mesa/${mesaId}`)
-      .then(data => { setPedidos(Array.isArray(data) ? data : []) }).catch(() => {}).finally(() => { setLoading(false); setTimeout(() => setRefreshing(false), 400) })
+      .then(data => { setPedidos(Array.isArray(data) ? data : []) }).catch(() => setPagoError('Error al actualizar')).finally(() => { setLoading(false); setTimeout(() => setRefreshing(false), 400) })
   }
 
   useEffect(() => {
@@ -66,7 +73,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     socket.on('item:actualizado', cargar)
     socket.on('pedido:creado', cargar)
     socket.on('item:pagado', cargar)
-    return () => { socket.off('item:actualizado'); socket.off('pedido:creado'); socket.off('item:pagado') }
+    return () => { socket.off('item:actualizado', cargar); socket.off('pedido:creado', cargar); socket.off('item:pagado', cargar) }
   }, [mesaId, restauranteId])
 
   const allItems = pedidos.flatMap(p => p.items)
@@ -83,44 +90,45 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const personas = Object.values(groups)
 
   const esGrupo = personas.length > 1
-  const userGroup = personas.find(p => p.entregados[0]?.usuario_id === user.id || p.preparando[0]?.usuario_id === user.id)
+  const userGroup = personas.find(p => [...p.entregados, ...p.preparando].some(i => i.usuario_id === user.id))
   const userItemsNoPagados = userGroup?.entregados.filter(i => !i.pagado) || []
   const userSubtotal = userItemsNoPagados.reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
   const todosPagados = personas.every(p => p.entregados.every(i => i.pagado))
   const total = personas.flatMap(p => p.entregados).filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
   const tipPct = tip === -1 ? Number(tipCustom) || 0 : tip
   const tipMonto = tipMode === 'amount' ? (Number(tipFijo) || 0) : total * tipPct / 100
-  const granTotal = total + tipMonto
+  const ivaMonto = ivaIncluido ? 0 : total * ivaPct / 100
+  const granTotal = total + ivaMonto + tipMonto
   const porPersonaTotal = personas.length > 0 ? granTotal / personas.length : 0
   const userDeuda = split === 'yo_invito' ? granTotal
     : split === 'iguales' ? porPersonaTotal
-    : total > 0 ? userSubtotal + (userSubtotal / total) * tipMonto
+    : total > 0 ? userSubtotal + (userSubtotal / total) * (ivaMonto + tipMonto)
     : userSubtotal
 
   async function pagar() {
-    setPagoEnviando(true)
+    setPagoEnviando(true); setPagoError('')
     try {
       await api('/api/pedidos/pagar', {
         method: 'POST',
         body: JSON.stringify({ mesa_id: Number(mesaId), split, metodo_pago: metodo, cambio_para: cambioPara || null, tip: tipMode === 'amount' ? 0 : tipPct, tip_monto: tipMode === 'amount' ? tipMonto : 0 }),
       })
-      setShowModal(false)
+      setShowModal(false); setPagoError('')
       cargar(); props?.onPagoCompletado?.()
-    } catch {}
+    } catch (e: any) { setPagoError(e?.message || 'Error al procesar el pago') }
     setPagoEnviando(false)
   }
 
-  if (loading) return <p className="text-center text-sm text-[#888] font-mono py-6">cargando..</p>
+  if (loading) return <div className="py-6" />
 
   const noHay = personas.length === 0 && cancelados.length === 0
 
   return (
-    <div className="font-mono text-sm leading-relaxed space-y-4">
+    <div className="text-sm leading-relaxed space-y-4">
       {noHay ? (
         <div className="text-center py-10 space-y-4">
           <p className="text-[#888]">no hay pedidos activos</p>
           <button onClick={() => props?.onSumarMas?.()}
-            className="text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline">menu</button>
+            className="text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline">menú</button>
         </div>
       ) : (
         <>
@@ -145,7 +153,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                       <p className="text-[10px] text-[#ccc] tracking-wider uppercase mb-1">en preparación</p>
                       <div className="space-y-0.5">
                         {p.preparando.map(item => (
-                          <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-[#ccc]">
+                          <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-[#999]">
                             <div className="flex items-baseline gap-1 min-w-0">
                               <span className="font-medium shrink-0">{item.cantidad}</span>
                               <span className="truncate text-[11px] italic">{item.nombre}</span>
@@ -204,7 +212,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                   <div className="flex justify-center">
                     <button onClick={() => { setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
                       className="text-[11px] px-4 py-1.5 border border-dashed border-[#111] text-[#111] font-medium hover:bg-gray-50 transition">
-                      Pagar — ${userSubtotal.toFixed(2)}
+                      Pagar — ${(userSubtotal + (ivaIncluido ? 0 : userSubtotal * ivaPct / 100)).toFixed(2)}
                     </button>
                   </div>
                 )}
@@ -218,7 +226,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                 </summary>
                 <div className="pb-2 space-y-1">
                   {cancelados.map(item => (
-                    <p key={item.id} className="text-[11px] text-[#ddd] line-through">
+                    <p key={item.id} className="text-[11px] text-[#bbb] line-through">
                       {item.cantidad} {item.nombre}
                     </p>
                   ))}
@@ -229,7 +237,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 text-center">
               <button onClick={() => props?.onSumarMas?.()}
                 className="text-[11px] text-[#888] underline underline-offset-2 decoration-dotted hover:text-[#111] uppercase tracking-wider flex items-center justify-center gap-1 mx-auto">
-                <Plus className="w-3 h-3" /> pedir algo mas
+                <Plus className="w-3 h-3" /> pedir algo más
               </button>
             </div>
           </div>
@@ -271,6 +279,10 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                   <span>${total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px] text-[#888]">
+                  <span>IVA ({ivaPct}%){ivaIncluido ? ' incl.' : ''}</span>
+                  <span>${ivaMonto.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-[#888]">
                   <span>propina {tipMode === 'amount' ? '' : `(${tipPct}%)`}</span>
                   <span>${tipMonto.toFixed(2)}</span>
                 </div>
@@ -298,7 +310,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             {!esGrupo && (
               <div className="border-t border-dashed border-[#ddd] pt-3 flex justify-between text-base font-bold">
                 <span>total</span>
-                <span>${(userSubtotal + tipMonto).toFixed(2)}</span>
+                <span>${(userSubtotal + (ivaIncluido ? 0 : userSubtotal * ivaPct / 100) + tipMonto).toFixed(2)}</span>
               </div>
             )}
 
@@ -388,6 +400,9 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               )}
             </div>
 
+            {pagoError && (
+              <p className="text-[11px] text-red-500 text-center bg-red-50 border border-red-100 rounded-md px-3 py-2">{pagoError}</p>
+            )}
             <button onClick={pagar} disabled={pagoEnviando}
               className="w-full py-3 text-sm font-medium text-white bg-[#111] hover:bg-[#000] transition disabled:opacity-40">
               {pagoEnviando ? 'enviando...' : `pagar $${userDeuda.toFixed(2)}`}

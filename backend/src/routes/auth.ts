@@ -2,9 +2,10 @@ import type { FastifyInstance } from 'fastify'
 import { hashPassword, verifyPassword, signAccessToken, signRefreshToken } from '../services/auth.js'
 import * as Usuario from '../models/usuario.js'
 import * as Session from '../models/session.js'
+import { rateLimit } from '../utils/rate-limit.js'
 
 export default async function authRoutes(app: FastifyInstance) {
-  app.post('/api/auth/register', async (request, reply) => {
+  app.post('/api/auth/register', { preHandler: rateLimit({ max: 5, windowMs: 60000 }) }, async (request, reply) => {
     const { celular, password, nombre } = request.body as { celular: string; password: string; nombre?: string }
 
     if (!celular || !password) {

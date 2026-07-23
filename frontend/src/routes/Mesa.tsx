@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
 import { Input } from '../components/ui/input'
 import { Separator } from '../components/ui/separator'
-import { api, getCurrentUser } from '../services/api'
+import { api, getCurrentUser, clearAppData } from '../services/api'
 import { connectToMesa, leaveMesa, socket } from '../services/socket'
 
 import { CartProvider, useCart } from '../stores/CartContext'
@@ -48,6 +48,7 @@ function MesaInner() {
   const [showActivo, setShowActivo] = useState(false)
   const [cuentaSolicitada, setCuentaSolicitada] = useState(false)
   const [pagoCompletado, setPagoCompletado] = useState(false)
+  const pagoHechoRef = useRef(false)
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
   const [bump, setBump] = useState(false)
   const prevCount = useRef(cartCount)
@@ -78,13 +79,33 @@ function MesaInner() {
     } finally { setLoading(false) }
   }, [restauranteId, mesaId, navigate])
 
-  useEffect(() => { join()
-    socket.on('comensal:unido', () => { api('/api/mesas/' + mesaId + '?restaurante_id=' + restauranteId).then((d: any) => { setComensales(d.comensales || []); if (d.codigo_invitacion) setCodigoInvitacion(d.codigo_invitacion) }) })
-    socket.on('pedido:creado', () => setTienePedido(true))
-    socket.on('item:actualizado', () => { api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => setTienePedido(Array.isArray(data) && data.length > 0)).catch(() => {}) })
-    socket.on('item:pagado', () => { api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => { const t = Array.isArray(data) && data.length > 0 && data.some((p: any) => p.items?.some((i: any) => !i.pagado)); setTienePedido(t) }).catch(() => {}) })
-    socket.on('mesa:estado', (d: any) => { if (d.mesaId === Number(mesaId)) { setMesa(prev => prev ? { ...prev, estado: d.estado } : prev);     if (['limpiando', 'libre'].includes(d.estado)) setCuentaCerrada(true) } })
-    return () => { socket.off('comensal:unido'); socket.off('pedido:creado'); socket.off('item:actualizado'); socket.off('item:pagado'); socket.off('mesa:estado'); leaveMesa(Number(restauranteId), Number(mesaId)) }
+  useEffect(() => {
+    const onComensalUnido = () => {
+      api('/api/mesas/' + mesaId + '?restaurante_id=' + restauranteId).then((d: any) => { setComensales(d.comensales || []); if (d.codigo_invitacion) setCodigoInvitacion(d.codigo_invitacion) })
+    }
+    const onPedidoCreado = () => setTienePedido(true)
+    const onItemActualizado = () => {
+      api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => setTienePedido(Array.isArray(data) && data.length > 0)).catch(() => {})
+    }
+    const onItemPagado = () => {
+      api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => { const t = Array.isArray(data) && data.length > 0 && data.some((p: any) => p.items?.some((i: any) => !i.pagado)); setTienePedido(t) }).catch(() => {})
+    }
+    const onMesaEstado = (d: any) => {
+      if (d.mesaId !== Number(mesaId)) return
+      setMesa(prev => prev ? { ...prev, estado: d.estado } : prev)
+      if (d.estado === 'pagada' && !pagoHechoRef.current) setPagoCompletado(true)
+      if (['limpiando', 'libre'].includes(d.estado)) setCuentaCerrada(true)
+    }
+    join()
+    socket.on('comensal:unido', onComensalUnido)
+    socket.on('pedido:creado', onPedidoCreado)
+    socket.on('item:actualizado', onItemActualizado)
+    socket.on('item:pagado', onItemPagado)
+    socket.on('mesa:estado', onMesaEstado)
+    return () => {
+      socket.off('comensal:unido', onComensalUnido); socket.off('pedido:creado', onPedidoCreado); socket.off('item:actualizado', onItemActualizado); socket.off('item:pagado', onItemPagado); socket.off('mesa:estado', onMesaEstado)
+      leaveMesa(Number(restauranteId), Number(mesaId))
+    }
   }, [join, mesaId, restauranteId])
 
   useEffect(() => {
@@ -100,8 +121,8 @@ function MesaInner() {
     const h = () => {
       if (showCart || showMesa || showLlamar || showPerfil) {
         setShowCart(false); setShowMesa(false); setShowLlamar(false); setShowPerfil(false)
+        window.history.pushState(null, '', window.location.href)
       }
-      window.history.pushState(null, '', window.location.href)
     }
     window.addEventListener('popstate', h)
     return () => window.removeEventListener('popstate', h)
@@ -155,7 +176,7 @@ function MesaInner() {
                   setTimeout(() => setCodigoCopyOk(false), 2000)
                 }
               }} className="flex items-center gap-1 font-mono text-[11px] text-[#888] hover:text-[#111] transition-colors shrink-0 whitespace-nowrap">
-                <span className="text-[9px] text-[#bbb] uppercase tracking-wider">codigo</span>
+                <span className="text-[9px] text-[#bbb] uppercase tracking-wider">código</span>
                 {codigoCopyOk ? (
                   <span className="text-green-500 font-medium">copiado</span>
                 ) : (
@@ -227,7 +248,7 @@ function MesaInner() {
             </div>
             <div className="p-4">
               {showActivo ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { pagoHechoRef.current = true; localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
               ) : items.length > 0 ? (
                 <div className="space-y-4">
                   <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
@@ -239,7 +260,7 @@ function MesaInner() {
                   )}
                 </div>
               ) : tienePedido ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { pagoHechoRef.current = true; localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
               ) : (
                 <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
@@ -298,11 +319,17 @@ function MesaInner() {
                 <div className="flex gap-2">
                   <button onClick={() => setShowLlamar(false)} className="flex-1 h-10 text-sm border border-[#e5ddd2] text-[#888] rounded-md hover:bg-[#faf6f2]">Cancelar</button>
                   <button onClick={async () => {
-                    if (!llamarMensaje.trim()) return; setLlamarEnviando(true)
-                    try { await api('/api/llamados/mesa/' + mesaId, { method: 'POST', body: JSON.stringify({ tipo: 'mensaje', mensaje: llamarMensaje.trim(), restaurante_id: Number(restauranteId) }) }); setLlamarExito(true) } catch (e: any) { setError(e.message || 'Error') } finally { setLlamarEnviando(false) }
+                    if (!llamarMensaje.trim()) return; setLlamarEnviando(true); setError('')
+                    try {
+                      const esCuenta = llamarMensaje.trim() === 'Cuenta por favor'
+                      await api('/api/llamados/mesa/' + mesaId, { method: 'POST', body: JSON.stringify({ tipo: esCuenta ? 'cuenta' : 'mensaje', mensaje: llamarMensaje.trim(), restaurante_id: Number(restauranteId) }) })
+                      setLlamarExito(true)
+                      if (esCuenta) setCuentaSolicitada(true)
+                    } catch (e: any) { setError(e.message || 'Error de conexión') } finally { setLlamarEnviando(false) }
                   }} disabled={!llamarMensaje.trim() || llamarEnviando}
                     className="flex-1 h-10 text-sm bg-[#111] hover:bg-[#000] disabled:bg-[#e5ddd2] disabled:text-[#aaa] text-white rounded-md">{llamarEnviando ? 'Enviando...' : 'Enviar'}</button>
                 </div>
+                {error && <p className="text-xs text-red-500 text-center">{error}</p>}
               </>
             )}
           </div>
@@ -355,7 +382,7 @@ function MesaInner() {
                 className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md font-medium">
                 Guardar cambios
               </button>
-              <button onClick={() => { localStorage.clear(); navigate('/login') }}
+              <button onClick={() => { clearAppData(); navigate('/login') }}
                 className="w-full h-10 text-sm border border-[#e5ddd2] text-[#888] hover:text-red-500 hover:border-red-200 rounded-md flex items-center justify-center gap-2 transition">
                 <LogOut className="w-3.5 h-3.5" /> Cerrar sesión
               </button>

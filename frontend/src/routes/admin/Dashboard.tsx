@@ -5,7 +5,7 @@ import { api } from '../../services/api'
 interface DashboardData {
   pedidos: { total: number }
   items: { total: number; pendiente: number; preparando: number; listo: number; entregado: number; cancelado: number }
-  mesas: { total: number; libre: number; ocupada: number; unida: number; limpiando: number }
+  mesas: { total: number; libre: number; ocupada: number; unida: number; pagada: number; limpiando: number }
 }
 
 export default function AdminDashboard() {
@@ -61,6 +61,10 @@ export default function AdminDashboard() {
           <div className="border border-gray-200 rounded-md p-4">
             <p className="text-2xl font-bold text-red-500">{data.mesas.ocupada + data.mesas.unida}</p>
             <p className="text-xs text-gray-500">Ocupadas</p>
+          </div>
+          <div className="border border-gray-200 rounded-md p-4">
+            <p className="text-2xl font-bold text-blue-600">{data.mesas.pagada || 0}</p>
+            <p className="text-xs text-gray-500">Pagadas</p>
           </div>
           <div className="border border-gray-200 rounded-md p-4">
             <p className="text-2xl font-bold text-amber-700">{data.mesas.limpiando}</p>

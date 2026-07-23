@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../services/api'
+import { api, clearAppData } from '../services/api'
 
 export default function Super() {
   const navigate = useNavigate()
@@ -83,7 +83,7 @@ export default function Super() {
     <div className="min-h-screen bg-white text-black p-4 md:p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Super Admin</h1>
-        <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
+        <button onClick={() => { clearAppData(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
       </div>
 
       <button onClick={() => { setShowForm(!showForm); setResultado(null) }} className="bg-black text-white px-4 py-2 rounded-md text-sm">

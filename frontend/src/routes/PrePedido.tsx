@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useCart } from '../stores/CartContext'
 import { api, getCurrentUser } from '../services/api'
 
@@ -7,8 +7,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
   const params = useParams()
   const restauranteId = props?.restauranteId || params.restauranteId
   const mesaId = props?.mesaId || params.mesaId
-  const navigate = useNavigate()
-  const { items, itemsPorComensal, removeItem, updateCantidad, clearCart, totalSinIVA } = useCart()
+  const { items, itemsPorComensal, removeItem, updateCantidad, clearCart, subtotal } = useCart()
   const [ivaPct, setIvaPct] = useState(16)
   const [ivaIncluido, setIvaIncluido] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -23,8 +22,6 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
       .then(d => { setIvaPct(d.iva_porcentaje); setIvaIncluido(d.iva_incluido) })
       .catch(() => {})
   }, [restauranteId])
-
-  const subtotal = totalSinIVA
   const ivaMonto = ivaIncluido ? 0 : Math.round(subtotal * ivaPct * 100) / 10000
   const total = ivaIncluido ? subtotal : subtotal + ivaMonto
 
@@ -48,17 +45,15 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
   }
 
   if (success) {
-    if (props?.onSuccess) {
-      setTimeout(() => props.onSuccess!(success), 1500)
-      return (
-        <div className="text-center py-16 space-y-3">
-          <p className="text-2xl font-bold">Pedido enviado</p>
-          <p className="text-sm text-[#888]">#{success}</p>
-          <p className="text-xs text-[#aaa] animate-pulse">redirigiendo...</p>
-        </div>
-      )
-    }
-    navigate(`/m/${restauranteId}/${mesaId}/pedido`, { replace: true }); return null
+    if (!props?.onSuccess) return null
+    setTimeout(() => props.onSuccess!(success), 1500)
+    return (
+      <div className="text-center py-16 space-y-3">
+        <p className="text-2xl font-bold">Pedido enviado</p>
+        <p className="text-sm text-[#888]">#{success}</p>
+        <p className="text-xs text-[#aaa] animate-pulse">redirigiendo...</p>
+      </div>
+    )
   }
 
   if (items.length === 0) return (
@@ -129,7 +124,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
           </div>
         )}
         <div className="flex justify-between text-base font-bold border-t border-[#e5ddd2] pt-3">
-          <span>Total</span>
+          <span>Total{ivaIncluido ? <span className="text-[10px] text-[#aaa] font-normal ml-1">(IVA incl.)</span> : ''}</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </div>

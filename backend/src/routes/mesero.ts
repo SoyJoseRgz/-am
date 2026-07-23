@@ -42,8 +42,8 @@ export default async function meseroRoutes(app: FastifyInstance) {
       const rid = req.user!.restauranteId
       if (!(await verificarMesa(id, rid!))) return reply.status(404).send({ error: 'Mesa no encontrada' })
       const { estado } = req.body
-      if (!['libre', 'ocupada', 'unida', 'limpiando'].includes(estado)) return reply.status(400).send({ error: 'Estado inválido' })
-      const m = await Mesa.setEstado(id, estado)
+      if (!['libre', 'ocupada', 'unida', 'limpiando', 'pagada'].includes(estado)) return reply.status(400).send({ error: 'Estado inválido' })
+      const m = await Mesa.setEstado(rid!, id, estado)
       if (['limpiando', 'libre'].includes(estado)) {
         await MesaUsuario.desactivarByMesa(id)
       }
@@ -61,8 +61,8 @@ export default async function meseroRoutes(app: FastifyInstance) {
       if (!(await verificarMesa(id, rid!))) return reply.status(404).send({ error: 'Mesa no encontrada' })
       const { con_mesa_id } = req.body
       if (!(await verificarMesa(con_mesa_id, rid!))) return reply.status(404).send({ error: 'Mesa destino no encontrada' })
-      await Mesa.setEstado(id, 'unida')
-      await Mesa.setEstado(con_mesa_id, 'unida')
+      await Mesa.setEstado(rid!, id, 'unida')
+      await Mesa.setEstado(rid!, con_mesa_id, 'unida')
       app.io?.to(`room:restaurante:${rid}`).emit('mesa:unida', { mesa1: id, mesa2: con_mesa_id })
       app.io?.to(`room:mesa:${rid}:${id}`).emit('mesa:estado', { mesaId: id, estado: 'unida' })
       app.io?.to(`room:mesa:${rid}:${con_mesa_id}`).emit('mesa:estado', { mesaId: con_mesa_id, estado: 'unida' })
@@ -76,7 +76,7 @@ export default async function meseroRoutes(app: FastifyInstance) {
       const id = parseInt(req.params.id)
       const rid = req.user!.restauranteId
       if (!(await verificarMesa(id, rid!))) return reply.status(404).send({ error: 'Mesa no encontrada' })
-      const m = await Mesa.setEstado(id, 'ocupada')
+      const m = await Mesa.setEstado(rid!, id, 'ocupada')
       if (!m) return reply.status(404).send({ error: 'Mesa no encontrada' })
       app.io?.to(`room:restaurante:${rid}`).emit('mesa:estado', { mesaId: id, estado: 'ocupada' })
       app.io?.to(`room:mesa:${rid}:${id}`).emit('mesa:estado', { mesaId: id, estado: 'ocupada' })

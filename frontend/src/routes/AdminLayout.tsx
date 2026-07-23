@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { connectToRestaurante } from '../services/socket'
-import { getCurrentUser } from '../services/api'
+import { getCurrentUser, clearAppData } from '../services/api'
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: '📊' },
@@ -38,7 +38,7 @@ export default function AdminLayout() {
           </NavLink>
         ))}
         <button
-          onClick={() => { localStorage.clear(); navigate('/login') }}
+          onClick={() => { clearAppData(); navigate('/login') }}
           className="mt-auto text-gray-400 hover:text-black text-sm text-left px-4 py-2"
         >
           Cerrar sesión
@@ -49,7 +49,7 @@ export default function AdminLayout() {
         <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200">
           <h1 className="text-lg font-bold">Admin</h1>
           <button
-            onClick={() => { localStorage.clear(); navigate('/login') }}
+            onClick={() => { clearAppData(); navigate('/login') }}
             className="text-sm text-gray-400 hover:text-black"
           >
             Cerrar sesión

@@ -5,7 +5,7 @@ import { ITEM_ESTADO_LABEL as ESTADO_LABEL, ITEM_ESTADO_BORDER as ESTADO_COLOR, 
 
 interface ModInfo { id: number; nombre: string; precio: string }
 interface ItemInfo {
-  id: number; platillo_id: number; nombre: string
+  id: number; pedido_id: number; platillo_id: number; nombre: string
   cantidad: number; precio_unitario: string
   estado: string; notas: string | null
   modificadores: ModInfo[]; mesa_numero: number
@@ -45,7 +45,7 @@ export default function MeseroKanban({ restauranteId, onClose }: { restauranteId
     setSelItem(null)
     if (item.estado === estado) return
     try {
-      await api(`/api/cocina/pedidos/0/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado }) })
+      await api(`/api/cocina/pedidos/${item.pedido_id}/items/${item.id}`, { method: 'PUT', body: JSON.stringify({ estado }) })
     } catch {}
   }
 

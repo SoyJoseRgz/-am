@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify'
 import * as Pedido from '../models/pedido.js'
 import * as Mesa from '../models/mesa.js'
+import * as MesaUsuario from '../models/mesa-usuario.js'
+import * as Pago from '../models/pago.js'
 
 export default async function pedidoRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
@@ -65,12 +67,15 @@ export default async function pedidoRoutes(app: FastifyInstance) {
   })
 
   app.post('/api/pedidos/pagar', async (request, reply) => {
-    const { mesa_id, split } = request.body as { mesa_id: number; split: string }
+    const { mesa_id, split, metodo_pago, cambio_para, tip, tip_monto } = request.body as { mesa_id: number; split: string; metodo_pago: string; cambio_para: string | null; tip: number; tip_monto: number }
     const usuarioId = request.user!.userId!
 
     const mesa = await Mesa.findById(Number(mesa_id))
     if (!mesa) return reply.status(404).send({ error: 'Mesa no encontrada' })
     const restauranteId = mesa.restaurante_id
+
+    const comensal = await MesaUsuario.findByMesaYUsuario(Number(mesa_id), usuarioId)
+    if (!comensal) return reply.status(403).send({ error: 'No eres comensal de esta mesa' })
 
     if (split === 'yo_invito') {
       await Pedido.marcarTodoPagado(Number(mesa_id))
@@ -78,13 +83,25 @@ export default async function pedidoRoutes(app: FastifyInstance) {
       await Pedido.marcarPagado(Number(mesa_id), usuarioId)
     }
 
+    await Pago.crear({
+      restaurante_id: restauranteId,
+      mesa_id: Number(mesa_id),
+      usuario_id: usuarioId,
+      split_type: split,
+      metodo_pago: metodo_pago || 'efectivo',
+      cambio_para: cambio_para || null,
+      tip_pct: tip || 0,
+      tip_monto: tip_monto || 0,
+    })
+
     app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('item:pagado', { usuarioId, split })
     app.io.to(`room:restaurante:${restauranteId}`).emit('item:pagado', { mesaId: mesa_id, usuarioId, split })
 
     const pendientes = await Pedido.pendientesSinPagar(Number(mesa_id))
     if (pendientes === 0) {
-      await Mesa.setEstado(Number(mesa_id), 'limpiando')
-      app.io.to(`room:restaurante:${restauranteId}`).emit('mesa:actualizada', { mesaId: mesa_id, estado: 'limpiando' })
+      await Mesa.setEstado(restauranteId, Number(mesa_id), 'pagada')
+      app.io.to(`room:restaurante:${restauranteId}`).emit('mesa:estado', { mesaId: mesa_id, estado: 'pagada' })
+      app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('mesa:estado', { mesaId: mesa_id, estado: 'pagada' })
     }
 
     return { success: true }

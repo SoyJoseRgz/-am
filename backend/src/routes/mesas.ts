@@ -45,7 +45,6 @@ export default async function mesaRoutes(app: FastifyInstance) {
     if (activos === 0) {
       codigoUsar = Math.floor(1000 + Math.random() * 9000).toString()
       await MesaUsuario.crear({ restaurante_id, mesa_id: mesaId, usuario_id: usuarioId, codigo_invitacion: codigoUsar })
-      await Mesa.setEstado(mesaId, 'ocupada')
       app.io.to(`room:restaurante:${restaurante_id}`).emit('mesa:estado', { mesaId, estado: 'ocupada' })
       app.io.to(`room:mesa:${restaurante_id}:${mesaId}`).emit('comensal:unido', { usuarioId })
       return { mesa: { id: mesa.id, numero: mesa.numero, estado: 'ocupada' }, codigo_invitacion: codigoUsar, primero: true }

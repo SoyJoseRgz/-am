@@ -30,7 +30,7 @@ interface CartContextType {
   removeItem: (index: number) => void
   updateCantidad: (index: number, delta: number) => void
   clearCart: () => void
-  totalSinIVA: number
+  subtotal: number
   itemsPorComensal: ItemsPorComensal[]
 }
 
@@ -90,7 +90,7 @@ export function CartProvider({ children, cartKey }: { children: ReactNode; cartK
     setItems([])
   }, [])
 
-  const totalSinIVA = items.reduce((sum, item) => {
+  const subtotal = items.reduce((sum, item) => {
     const base = item.precioUnitario * item.cantidad
     const mods = item.modificadores.reduce((m, mod) => m + mod.precio, 0) * item.cantidad
     return sum + base + mods
@@ -107,7 +107,7 @@ export function CartProvider({ children, cartKey }: { children: ReactNode; cartK
   }, [])
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateCantidad, clearCart, totalSinIVA, itemsPorComensal: porComensal }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateCantidad, clearCart, subtotal, itemsPorComensal: porComensal }}>
       {children}
     </CartContext.Provider>
   )

@@ -177,7 +177,8 @@ export async function findForAdmin(restauranteId: number) {
        JOIN platillos pl ON pl.id = pi.platillo_id
        LEFT JOIN usuarios u ON u.id = pi.usuario_id
        WHERE pi.pedido_id = $1
-       ORDER BY pi.id`,
+       ORDER BY pi.id
+       LIMIT 50`,
       [ped.id],
     )
     ped.items = items.rows
@@ -219,6 +220,7 @@ export async function getDashboardStats(restauranteId: number) {
        COUNT(*) FILTER (WHERE estado = 'libre')::int AS libre,
        COUNT(*) FILTER (WHERE estado = 'ocupada')::int AS ocupada,
        COUNT(*) FILTER (WHERE estado = 'unida')::int AS unida,
+       COUNT(*) FILTER (WHERE estado = 'pagada')::int AS pagada,
        COUNT(*) FILTER (WHERE estado = 'limpiando')::int AS limpiando
      FROM mesas WHERE restaurante_id = $1`,
     [restauranteId],
@@ -235,7 +237,7 @@ export async function marcarPagado(mesaId: number, usuarioId: number) {
     `UPDATE pedido_items SET pagado = true
      WHERE usuario_id = $1
      AND pagado = false
-     AND estado = 'entregado'
+     AND estado <> 'cancelado'
      AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $2 AND estado = 'activo')`,
     [usuarioId, mesaId],
   )
@@ -245,7 +247,7 @@ export async function marcarTodoPagado(mesaId: number) {
   await pool.query(
     `UPDATE pedido_items SET pagado = true
      WHERE pagado = false
-     AND estado = 'entregado'
+     AND estado <> 'cancelado'
      AND pedido_id IN (SELECT id FROM pedidos WHERE mesa_id = $1 AND estado = 'activo')`,
     [mesaId],
   )
@@ -257,7 +259,7 @@ export async function pendientesSinPagar(mesaId: number) {
      JOIN pedidos p ON p.id = pi.pedido_id
      WHERE p.mesa_id = $1
      AND p.estado = 'activo'
-     AND pi.estado = 'entregado'
+     AND pi.estado <> 'cancelado'
      AND pi.pagado = false`,
     [mesaId],
   )

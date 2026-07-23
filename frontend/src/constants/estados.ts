@@ -1,5 +1,5 @@
 export const MESA_ESTADO_LABEL: Record<string, string> = {
-  libre: 'Libre', ocupada: 'Ocupada', unida: 'Unida', limpiando: 'Limpiando',
+  libre: 'Libre', ocupada: 'Ocupada', unida: 'Unida', pagada: 'Pagada', limpiando: 'Limpiando',
 }
 
 export const ITEM_ESTADO_LABEL: Record<string, string> = {

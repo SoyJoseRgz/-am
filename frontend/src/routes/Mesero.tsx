@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api, getCurrentUser } from '../services/api'
+import { api, getCurrentUser, clearAppData } from '../services/api'
 import { connectToRestaurante, socket } from '../services/socket'
 import { MESA_ESTADO_LABEL } from '../constants/estados'
 import { CartProvider } from '../stores/CartContext'
@@ -16,12 +16,14 @@ interface MesaInfo {
 interface Llamado {
   id: number; mesa_id: number; mesa_numero: number; tipo: string; mensaje: string | null
   usuario_nombre: string; created_at: string
+  split_preference: string | null; tip_preference: number | null
 }
 
 const ESTADO_CLASS: Record<string, string> = {
   libre: 'bg-green-100 border-green-300 text-green-800',
   ocupada: 'bg-red-100 border-red-300 text-red-800',
   unida: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+  pagada: 'bg-blue-100 border-blue-300 text-blue-800',
   limpiando: 'bg-amber-100 border-amber-300 text-amber-800',
 }
 
@@ -62,14 +64,15 @@ export default function Mesero() {
     const onEstado = (d: any) => setMesas(prev => prev.map(m => m.id === d.mesaId ? { ...m, estado: d.estado } : m))
     const onLlamado = (d: any) => setLlamados(prev => [d, ...prev])
     const onAtendido = (d: any) => setLlamados(prev => prev.filter(l => l.id !== d.id))
-    socket.on('mesa:estado', onEstado)
-    socket.on('mesa:unida', (d: any) => {
+    const onUnida = (d: any) => {
       setMesas(prev => prev.map(m => (m.id === d.mesa1 || m.id === d.mesa2) ? { ...m, estado: 'unida' } : m))
-    })
+    }
+    socket.on('mesa:estado', onEstado)
+    socket.on('mesa:unida', onUnida)
     socket.on('llamado:nuevo', onLlamado)
     socket.on('llamado:atendido', onAtendido)
     return () => {
-      socket.off('mesa:estado', onEstado); socket.off('llamado:nuevo', onLlamado); socket.off('llamado:atendido', onAtendido)
+      socket.off('mesa:estado', onEstado); socket.off('llamado:nuevo', onLlamado); socket.off('llamado:atendido', onAtendido); socket.off('mesa:unida', onUnida)
     }
   }, [user.restaurante_id])
 
@@ -111,7 +114,7 @@ export default function Mesero() {
             <button onClick={() => setKanban(!kanban)} className={`text-xs px-3 py-1 rounded-full border ${kanban ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500'}`}>
               {kanban ? 'Mesas' : 'Pedidos'}
             </button>
-            <button onClick={() => { localStorage.clear(); navigate('/login') }} className="text-xs text-gray-400 hover:text-black">
+            <button onClick={() => { clearAppData(); navigate('/login') }} className="text-xs text-gray-400 hover:text-black">
               Salir
             </button>
           </div>
@@ -127,14 +130,9 @@ export default function Mesero() {
                     {l.usuario_nombre && <span className="text-gray-500 ml-1">— {l.usuario_nombre}</span>}
                     <p className="text-gray-600 text-xs mt-0.5">
                       {l.tipo === 'cuenta' ? '🧾 Cuenta' : (l.mensaje || l.tipo)}
-                      {l.tipo === 'cuenta' && l.mensaje && (() => {
-                        const s = l.mensaje.includes('|||') ? l.mensaje.split('|||')[1] : null
-                        if (!s) return null
-                        try {
-                          const p = JSON.parse(s)
-                          const label = p.split === 'iguales' ? 'Iguales' : p.split === 'yo_invito' ? 'Yo invito' : 'Individual'
-                          return <span className="ml-1 text-gray-400">· {label}{p.tip > 0 ? ` (${p.tip}% propina)` : ''}</span>
-                        } catch { return null }
+                      {l.tipo === 'cuenta' && l.split_preference && (() => {
+                        const label = l.split_preference === 'iguales' ? 'Iguales' : l.split_preference === 'yo_invito' ? 'Yo invito' : 'Individual'
+                        return <span className="ml-1 text-gray-400">· {label}{l.tip_preference ? ` (${l.tip_preference}% propina)` : ''}</span>
                       })()}
                     </p>
                   </div>
@@ -192,8 +190,8 @@ export default function Mesero() {
                   </button>
                   <button onClick={() => {
                     const last = llamados.find(l => l.mesa_id === sel.id && l.tipo === 'cuenta')
-                    let ps = 'individual'; let pt = 0
-                    if (last?.mensaje?.includes('|||')) try { const p = JSON.parse(last.mensaje.split('|||')[1]); ps = p.split || 'individual'; pt = p.tip || 0 } catch {}
+                    const ps = last?.split_preference || 'individual'
+                    const pt = last?.tip_preference || 0
                     api<CuentaData>('/api/mesero/mesas/' + sel.id + '/cuenta').then(d => { setCuenta(d); setCuentaMesa(sel); setSplit(ps as any); setTip(pt); setYoInvitaIdx(0); setSel(null) })
                   }} className="w-full border border-black text-black py-2 rounded-md text-sm">
                     Ver cuenta
@@ -210,6 +208,11 @@ export default function Mesero() {
               {sel.estado === 'unida' && (
                 <button onClick={() => separar(sel.id)} className="w-full bg-gray-200 text-gray-600 py-2 rounded-md text-sm">
                   Separar mesa
+                </button>
+              )}
+              {sel.estado === 'pagada' && (
+                <button onClick={() => cambiarEstado(sel.id, 'limpiando')} className="w-full bg-black text-white py-2 rounded-md text-sm">
+                  Pago verificado — limpiar mesa
                 </button>
               )}
               {sel.estado === 'limpiando' && (

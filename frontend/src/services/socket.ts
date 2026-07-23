@@ -3,7 +3,8 @@ import { io } from 'socket.io-client'
 const socket = io('/', { autoConnect: false })
 
 export function connectToMesa(restauranteId: number, mesaId: number) {
-  const doJoin = () => socket.emit('join:mesa', { restauranteId, mesaId })
+  const doJoin = () => { socket.emit('join:mesa', { restauranteId, mesaId }); socket.off('connect', doJoin) }
+  socket.off('connect', doJoin)
   socket.on('connect', doJoin)
   if (socket.connected) {
     doJoin()
@@ -13,7 +14,8 @@ export function connectToMesa(restauranteId: number, mesaId: number) {
 }
 
 export function connectToRestaurante(restauranteId: number) {
-  const doJoin = () => socket.emit('join:restaurante', restauranteId)
+  const doJoin = () => { socket.emit('join:restaurante', restauranteId); socket.off('connect', doJoin) }
+  socket.off('connect', doJoin)
   socket.on('connect', doJoin)
   if (socket.connected) {
     doJoin()
@@ -24,6 +26,10 @@ export function connectToRestaurante(restauranteId: number) {
 
 export function leaveMesa(restauranteId: number, mesaId: number) {
   socket.emit('leave:mesa', { restauranteId, mesaId })
+}
+
+export function leaveRestaurante(restauranteId: number) {
+  socket.emit('leave:restaurante', restauranteId)
 }
 
 export { socket }

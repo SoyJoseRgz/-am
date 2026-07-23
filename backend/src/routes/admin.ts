@@ -54,7 +54,7 @@ export default async function adminRoutes(app: FastifyInstance) {
 
   // ── Platillos ──
   app.get('/api/admin/platillos', async (request) => {
-    return Platillo.findByRestaurante(request.user!.restauranteId!)
+    return Platillo.findAllByRestaurante(request.user!.restauranteId!)
   })
 
   app.post('/api/admin/platillos', async (request) => {
