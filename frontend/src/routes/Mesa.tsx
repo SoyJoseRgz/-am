@@ -71,6 +71,8 @@ function MesaInner() {
       }) as any
       setMesa(data.mesa)
       if (data.codigo_invitacion) setCodigoInvitacion(data.codigo_invitacion)
+      localStorage.setItem('lastMesa_restauranteId', String(restauranteId))
+      localStorage.setItem('lastMesa_mesaId', String(mesaId))
       connectToMesa(Number(restauranteId), Number(mesaId))
     } catch (e: any) {
       if (e.message === 'Código de invitación requerido') { setNeedsCode(true); setLoading(false); return }
@@ -82,7 +84,7 @@ function MesaInner() {
     socket.on('comensal:unido', () => { api('/api/mesas/' + mesaId + '?restaurante_id=' + restauranteId).then((d: any) => { setComensales(d.comensales || []); if (d.codigo_invitacion) setCodigoInvitacion(d.codigo_invitacion) }) })
     socket.on('pedido:creado', () => setTienePedido(true))
     socket.on('item:actualizado', () => { api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => setTienePedido(Array.isArray(data) && data.length > 0)).catch(() => {}) })
-    socket.on('mesa:estado', (d: any) => { if (d.mesaId === Number(mesaId)) { setMesa(prev => prev ? { ...prev, estado: d.estado } : prev); if (d.estado === 'limpiando') setCuentaCerrada(true) } })
+    socket.on('mesa:estado', (d: any) => { if (d.mesaId === Number(mesaId)) { setMesa(prev => prev ? { ...prev, estado: d.estado } : prev);     if (['limpiando', 'libre'].includes(d.estado)) setCuentaCerrada(true) } })
     return () => { socket.off('comensal:unido'); socket.off('pedido:creado'); socket.off('item:actualizado'); socket.off('mesa:estado'); leaveMesa(Number(restauranteId), Number(mesaId)) }
   }, [join, mesaId, restauranteId])
 
@@ -92,7 +94,19 @@ function MesaInner() {
     api<any[]>('/api/pedidos/mesa/' + mesaId).then(data => setTienePedido(Array.isArray(data) && data.length > 0)).catch(() => {})
   }, [mesa, mesaId, restauranteId])
 
-  function limpiarCarrito() { Object.keys(localStorage).filter(k => k.startsWith('cart_')).forEach(k => localStorage.removeItem(k)) }
+  function limpiarCarrito() { Object.keys(localStorage).filter(k => k.startsWith('cart_')).forEach(k => localStorage.removeItem(k)); localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId') }
+
+  useEffect(() => {
+    window.history.pushState(null, '', window.location.href)
+    const h = () => {
+      if (showCart || showMesa || showLlamar || showPerfil) {
+        setShowCart(false); setShowMesa(false); setShowLlamar(false); setShowPerfil(false)
+      }
+      window.history.pushState(null, '', window.location.href)
+    }
+    window.addEventListener('popstate', h)
+    return () => window.removeEventListener('popstate', h)
+  }, [showCart, showMesa, showLlamar, showPerfil])
 
   useEffect(() => { if (cuentaCerrada) { const t = setTimeout(() => { limpiarCarrito(); navigate('/') }, 5000); return () => clearTimeout(t) } }, [cuentaCerrada, navigate])
 
@@ -115,7 +129,7 @@ function MesaInner() {
   }
 
   if (loading && !joinAttempted) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex items-center justify-center"><p className="text-[#888]">Uniéndote a la mesa...</p></div>
-  if (error && !mesa && !needsCode) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => navigate('/')} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
+  if (error && !mesa && !needsCode) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
 
   if (needsCode && !mesa) {
     return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4">

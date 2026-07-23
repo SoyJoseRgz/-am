@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { QrCode, User } from 'lucide-react'
+import { api } from './services/api'
 import Mesa from './routes/Mesa'
 import Cocina from './routes/Cocina'
 import AdminLayout from './routes/AdminLayout'
@@ -41,6 +42,24 @@ function Home() {
   const [newPassword, setNewPassword] = useState('')
   const [perfilMsg, setPerfilMsg] = useState('')
   const [perfilError, setPerfilError] = useState('')
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken')
+    const rid = localStorage.getItem('lastMesa_restauranteId')
+    const mid = localStorage.getItem('lastMesa_mesaId')
+    if (!token || !rid || !mid) return
+    api('/api/mesas/' + mid + '?restaurante_id=' + rid).then((d: any) => {
+      if (d.comensales?.some((c: any) => c.usuario_id === user?.id)) {
+        navigate('/m/' + rid + '/' + mid, { replace: true })
+        return
+      }
+      localStorage.removeItem('lastMesa_restauranteId')
+      localStorage.removeItem('lastMesa_mesaId')
+    }).catch(() => {
+      localStorage.removeItem('lastMesa_restauranteId')
+      localStorage.removeItem('lastMesa_mesaId')
+    })
+  }, [])
 
   async function guardarPerfil() {
     setPerfilMsg('')
