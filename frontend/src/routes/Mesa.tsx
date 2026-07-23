@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Users, X, Bell, LogOut } from 'lucide-react'
+import { ShoppingCart, Users, X, Bell, LogOut, Landmark } from 'lucide-react'
 import { Input } from '../components/ui/input'
 import { Separator } from '../components/ui/separator'
 import { api, getCurrentUser, clearAppData } from '../services/api'
@@ -48,6 +48,7 @@ function MesaInner() {
   const [showActivo, setShowActivo] = useState(false)
   const [cuentaSolicitada, setCuentaSolicitada] = useState(false)
   const [pagoCompletado, setPagoCompletado] = useState(false)
+  const [pagoSolicitado, setPagoSolicitado] = useState<{ metodo_pago: string } | null>(null)
   const pagoHechoRef = useRef(false)
   const cartCount = items.filter(i => i.usuarioId === usuarioId).reduce((s, i) => s + i.cantidad, 0)
   const [bump, setBump] = useState(false)
@@ -93,8 +94,13 @@ function MesaInner() {
     const onMesaEstado = (d: any) => {
       if (d.mesaId !== Number(mesaId)) return
       setMesa(prev => prev ? { ...prev, estado: d.estado } : prev)
-      if (d.estado === 'pagada' && !pagoHechoRef.current) setPagoCompletado(true)
+      if (d.estado === 'pagada' && !pagoHechoRef.current) { setPagoSolicitado(null); setPagoCompletado(true) }
       if (['limpiando', 'libre'].includes(d.estado)) setCuentaCerrada(true)
+    }
+    const onPagoConfirmado = (d: any) => {
+      if (d.mesaId !== Number(mesaId)) return
+      setPagoSolicitado(null)
+      setPagoCompletado(true)
     }
     join()
     socket.on('comensal:unido', onComensalUnido)
@@ -102,8 +108,9 @@ function MesaInner() {
     socket.on('item:actualizado', onItemActualizado)
     socket.on('item:pagado', onItemPagado)
     socket.on('mesa:estado', onMesaEstado)
+    socket.on('pago:confirmado', onPagoConfirmado)
     return () => {
-      socket.off('comensal:unido', onComensalUnido); socket.off('pedido:creado', onPedidoCreado); socket.off('item:actualizado', onItemActualizado); socket.off('item:pagado', onItemPagado); socket.off('mesa:estado', onMesaEstado)
+      socket.off('comensal:unido', onComensalUnido); socket.off('pedido:creado', onPedidoCreado); socket.off('item:actualizado', onItemActualizado); socket.off('item:pagado', onItemPagado); socket.off('mesa:estado', onMesaEstado); socket.off('pago:confirmado', onPagoConfirmado)
       leaveMesa(Number(restauranteId), Number(mesaId))
     }
   }, [join, mesaId, restauranteId])
@@ -158,6 +165,7 @@ function MesaInner() {
   if (!mesa) return null
 
   return (
+    <>
     <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col">
       {/* header */}
       <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
@@ -248,7 +256,7 @@ function MesaInner() {
             </div>
             <div className="p-4">
               {showActivo ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { pagoHechoRef.current = true; localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoSolicitado={(data) => { setShowCart(false); setShowActivo(false); setPagoSolicitado(data) }} />
               ) : items.length > 0 ? (
                 <div className="space-y-4">
                   <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
@@ -260,7 +268,7 @@ function MesaInner() {
                   )}
                 </div>
               ) : tienePedido ? (
-                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoCompletado={() => { pagoHechoRef.current = true; localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); setShowCart(false); setShowActivo(false); setPagoCompletado(true) }} />
+                <PedidoActivo restauranteId={restauranteId} mesaId={mesaId} onSumarMas={() => { setShowCart(false); setShowActivo(false) }} cuentaSolicitada={cuentaSolicitada} onCuentaSolicitada={() => setCuentaSolicitada(true)} onPagoSolicitado={(data) => { setShowCart(false); setShowActivo(false); setPagoSolicitado(data) }} />
               ) : (
                 <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
               )}
@@ -391,6 +399,35 @@ function MesaInner() {
         </div>
       )}
     </div>
+
+      {pagoSolicitado && (
+        <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl w-full max-w-sm p-6 text-center space-y-4">
+            {pagoSolicitado.metodo_pago === 'deposito' ? (
+              <>
+                <div className="w-12 h-12 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto">
+                  <Landmark className="w-5 h-5 text-blue-500" />
+                </div>
+                <h3 className="font-bold text-lg">Depósito en revisión</h3>
+                <p className="text-xs text-[#888]">Estamos revisando tu depósito. El encargado lo confirmará pronto.</p>
+              </>
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto">
+                  <span className="text-xl">🟡</span>
+                </div>
+                <h3 className="font-bold text-lg">Esperando al mesero</h3>
+                <p className="text-xs text-[#888]">Avisamos al mesero. Te cobrará en la mesa en un momento.</p>
+              </>
+            )}
+            <button onClick={() => setPagoSolicitado(null)}
+              className="w-full h-10 text-sm border border-[#e5ddd2] text-[#888] hover:text-[#111] rounded-md transition">
+              Seguir pidiendo
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   )
 }
 

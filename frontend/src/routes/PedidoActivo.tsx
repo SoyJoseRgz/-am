@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { User, Plus, Wallet, Banknote, Landmark, Percent, Copy, Check } from 'lucide-react'
+import { User, Plus, Wallet, Banknote, Landmark, Percent, Copy, Check, X } from 'lucide-react'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
 
@@ -30,7 +30,7 @@ interface PedidoData {
   created_at: string; comensal_nombre: string; items: ItemData[]
 }
 
-export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onSumarMas?: () => void; cuentaSolicitada?: boolean; onCuentaSolicitada?: () => void; onPagoCompletado?: () => void }) {
+export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: string; onSumarMas?: () => void; cuentaSolicitada?: boolean; onCuentaSolicitada?: () => void; onPagoSolicitado?: (data: { metodo_pago: string }) => void }) {
   const params = useParams()
   const restauranteId = props?.restauranteId || params.restauranteId
   const mesaId = props?.mesaId || params.mesaId
@@ -50,6 +50,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const [depositoInfo, setDepositoInfo] = useState<{ banco: string; clabe: string; numero_tarjeta?: string; titular: string } | null>(null)
   const [ivaPct, setIvaPct] = useState(16)
   const [ivaIncluido, setIvaIncluido] = useState(true)
+  const [cancelandoItem, setCancelandoItem] = useState<number | null>(null)
+  const [cancelError, setCancelError] = useState('')
   const user = getCurrentUser()
 
   useEffect(() => {
@@ -108,14 +110,27 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   async function pagar() {
     setPagoEnviando(true); setPagoError('')
     try {
-      await api('/api/pedidos/pagar', {
+      const res = await api<{ success: boolean; metodo_pago: string }>('/api/pedidos/solicitar-pago', {
         method: 'POST',
         body: JSON.stringify({ mesa_id: Number(mesaId), split, metodo_pago: metodo, cambio_para: cambioPara || null, tip: tipMode === 'amount' ? 0 : tipPct, tip_monto: tipMode === 'amount' ? tipMonto : 0 }),
       })
       setShowModal(false); setPagoError('')
-      cargar(); props?.onPagoCompletado?.()
+      cargar()
+      props?.onPagoSolicitado?.({ metodo_pago: res.metodo_pago || metodo })
     } catch (e: any) { setPagoError(e?.message || 'Error al procesar el pago') }
     setPagoEnviando(false)
+  }
+
+  async function cancelarItem(item: ItemData) {
+    setCancelandoItem(item.id); setCancelError('')
+    try {
+      await api(`/api/pedidos/${item.pedido_id}/items/${item.id}/cancelar`, { method: 'PUT' })
+      setCancelandoItem(null)
+      cargar()
+    } catch (e: any) {
+      setCancelError(e?.message || 'Error al cancelar')
+      setCancelandoItem(null)
+    }
   }
 
   if (loading) return <div className="py-6" />
@@ -152,14 +167,23 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                     <div className="mb-2">
                       <p className="text-[10px] text-[#ccc] tracking-wider uppercase mb-1">en preparación</p>
                       <div className="space-y-0.5">
-                        {p.preparando.map(item => (
+                        {p.preparando.map(item => {
+                          const esPendiente = item.estado === 'pendiente'
+                          const esMio = item.usuario_id === user.id
+                          return (
                           <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-[#999]">
                             <div className="flex items-baseline gap-1 min-w-0">
                               <span className="font-medium shrink-0">{item.cantidad}</span>
                               <span className="truncate text-[11px] italic">{item.nombre}</span>
                             </div>
+                            {esPendiente && esMio && (
+                              <button onClick={() => cancelarItem(item)} disabled={cancelandoItem === item.id}
+                                className="shrink-0 w-5 h-5 flex items-center justify-center text-[10px] text-red-300 hover:text-red-500 border border-red-100 hover:border-red-300 rounded-full transition">
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}
@@ -219,6 +243,9 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               </div>
             )}
 
+            {cancelError && (
+              <p className="text-[11px] text-red-500 text-center bg-red-50 border border-red-100 rounded-md px-3 py-2">{cancelError}</p>
+            )}
             {cancelados.length > 0 && (
               <details className="border-t border-dashed border-[#ddd]">
                 <summary className="py-2 text-[11px] text-[#bbb] cursor-pointer hover:text-[#888] tracking-wider uppercase text-center">
@@ -405,7 +432,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             )}
             <button onClick={pagar} disabled={pagoEnviando}
               className="w-full py-3 text-sm font-medium text-white bg-[#111] hover:bg-[#000] transition disabled:opacity-40">
-              {pagoEnviando ? 'enviando...' : `pagar $${userDeuda.toFixed(2)}`}
+              {pagoEnviando ? 'enviando...' : `solicitar pago $${userDeuda.toFixed(2)}`}
             </button>
           </div>
         </div>

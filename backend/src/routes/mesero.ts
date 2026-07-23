@@ -2,6 +2,8 @@ import type { FastifyInstance } from 'fastify'
 import { pool } from '../db.js'
 import * as Mesa from '../models/mesa.js'
 import * as MesaUsuario from '../models/mesa-usuario.js'
+import * as Pago from '../models/pago.js'
+import * as Pedido from '../models/pedido.js'
 
 export default async function meseroRoutes(app: FastifyInstance) {
   app.addHook('preHandler', app.authenticate)
@@ -90,7 +92,7 @@ export default async function meseroRoutes(app: FastifyInstance) {
     if (!(await verificarMesa(mesaId, rid!))) return reply.status(404).send({ error: 'Mesa no encontrada' })
     const items = await pool.query(
       `SELECT pi.id, pi.platillo_id, pi.usuario_id, pi.cantidad,
-              pi.precio_unitario, pi.estado, pi.notas,
+              pi.precio_unitario, pi.estado, pi.pagado, pi.notas,
               pl.nombre, u.nombre AS comensal_nombre
        FROM pedido_items pi
        JOIN pedidos p ON p.id = pi.pedido_id AND p.estado = 'activo'
@@ -111,4 +113,58 @@ export default async function meseroRoutes(app: FastifyInstance) {
       mesa_id: mesaId,
     }
   })
+
+  app.get('/api/mesero/pagos-pendientes', async (req) => {
+    const rid = req.user!.restauranteId
+    return Pago.findPendientesByRestaurante(rid!)
+  })
+
+  app.post<{ Params: { id: string }; Body: { split: string; tip: number; tip_monto: number } }>(
+    '/api/mesero/mesas/:id/cobrar',
+    async (req, reply) => {
+      const mesaId = parseInt(req.params.id)
+      const rid = req.user!.restauranteId
+      const meseroId = req.user!.userId!
+      if (!(await verificarMesa(mesaId, rid!))) return reply.status(404).send({ error: 'Mesa no encontrada' })
+      const { split, tip, tip_monto } = req.body
+
+      if (split === 'yo_invito') {
+        await Pedido.marcarTodoPagado(mesaId)
+      } else {
+        const items = await pool.query(
+          `SELECT DISTINCT usuario_id FROM pedido_items pi
+           JOIN pedidos p ON p.id = pi.pedido_id AND p.estado = 'activo'
+           WHERE p.mesa_id = $1 AND pi.estado <> 'cancelado' AND pi.pagado = false`,
+          [mesaId],
+        )
+        for (const row of items.rows) {
+          await Pedido.marcarPagado(mesaId, row.usuario_id)
+        }
+      }
+
+      const montoTotal = await Pago.calcularMontoTotal(mesaId, meseroId, split, tip, tip_monto || 0, 'amount')
+
+      await Pago.crear({
+        restaurante_id: rid!,
+        mesa_id: mesaId,
+        usuario_id: meseroId,
+        split_type: split,
+        metodo_pago: 'efectivo',
+        cambio_para: null,
+        tip_pct: tip || 0,
+        tip_monto: tip_monto || 0,
+        monto_total: montoTotal,
+      })
+
+      await MesaUsuario.desactivarByMesa(mesaId)
+      const m = await Mesa.setEstado(rid!, mesaId, 'limpiando')
+
+      app.io?.to(`room:restaurante:${rid}`).emit('mesa:estado', { mesaId, estado: 'limpiando' })
+      app.io?.to(`room:mesa:${rid}:${mesaId}`).emit('mesa:estado', { mesaId, estado: 'limpiando' })
+      app.io?.to(`room:restaurante:${rid}`).emit('item:pagado', { mesaId, usuarioId: meseroId, split })
+      app.io?.to(`room:mesa:${rid}:${mesaId}`).emit('item:pagado', { usuarioId: meseroId, split })
+
+      return m
+    },
+  )
 }

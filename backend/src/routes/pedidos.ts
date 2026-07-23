@@ -83,6 +83,8 @@ export default async function pedidoRoutes(app: FastifyInstance) {
       await Pedido.marcarPagado(Number(mesa_id), usuarioId)
     }
 
+    const montoTotal = await Pago.calcularMontoTotal(Number(mesa_id), usuarioId, split, tip, tip_monto || 0, 'pct')
+
     await Pago.crear({
       restaurante_id: restauranteId,
       mesa_id: Number(mesa_id),
@@ -92,6 +94,7 @@ export default async function pedidoRoutes(app: FastifyInstance) {
       cambio_para: cambio_para || null,
       tip_pct: tip || 0,
       tip_monto: tip_monto || 0,
+      monto_total: montoTotal,
     })
 
     app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('item:pagado', { usuarioId, split })
@@ -102,6 +105,82 @@ export default async function pedidoRoutes(app: FastifyInstance) {
       await Mesa.setEstado(restauranteId, Number(mesa_id), 'pagada')
       app.io.to(`room:restaurante:${restauranteId}`).emit('mesa:estado', { mesaId: mesa_id, estado: 'pagada' })
       app.io.to(`room:mesa:${restauranteId}:${mesa_id}`).emit('mesa:estado', { mesaId: mesa_id, estado: 'pagada' })
+    }
+
+    return { success: true }
+  })
+
+  app.post('/api/pedidos/solicitar-pago', async (request, reply) => {
+    const { mesa_id, split, metodo_pago, cambio_para, tip, tip_monto } = request.body as { mesa_id: number; split: string; metodo_pago: string; cambio_para: string | null; tip: number; tip_monto: number }
+    const usuarioId = request.user!.userId!
+
+    const mesa = await Mesa.findById(Number(mesa_id))
+    if (!mesa) return reply.status(404).send({ error: 'Mesa no encontrada' })
+    const restauranteId = mesa.restaurante_id
+
+    const comensal = await MesaUsuario.findByMesaYUsuario(Number(mesa_id), usuarioId)
+    if (!comensal) return reply.status(403).send({ error: 'No eres comensal de esta mesa' })
+
+    const montoTotal = await Pago.calcularMontoTotal(Number(mesa_id), usuarioId, split, tip, tip_monto || 0, 'pct')
+
+    const pago = await Pago.crearPendiente({
+      restaurante_id: restauranteId,
+      mesa_id: Number(mesa_id),
+      usuario_id: usuarioId,
+      split_type: split,
+      metodo_pago: metodo_pago || 'efectivo',
+      cambio_para: cambio_para || null,
+      tip_pct: tip || 0,
+      tip_monto: tip_monto || 0,
+      monto_total: montoTotal,
+    })
+
+    app.io.to(`room:restaurante:${restauranteId}`).emit('pago:solicitado', {
+      id: pago.id,
+      mesa_id,
+      usuario_id: usuarioId,
+      metodo_pago: metodo_pago || 'efectivo',
+      monto_total: montoTotal,
+      split_type: split,
+      tip_pct: tip || 0,
+      tip_monto: tip_monto || 0,
+      cambio_para: cambio_para || null,
+      mesa_numero: mesa.numero,
+    })
+
+    return { success: true, pagoId: pago.id, metodo_pago: metodo_pago || 'efectivo' }
+  })
+
+  app.put('/api/pedidos/confirmar-pago/:pagoId', {
+    preHandler: [app.authenticate, app.requireRol('mesero', 'admin', 'super_admin')],
+  }, async (request, reply) => {
+    const { pagoId } = request.params as { pagoId: string }
+    const meseroId = request.user!.userId!
+    const rid = request.user!.restauranteId!
+
+    const pago = await Pago.findById(Number(pagoId))
+    if (!pago) return reply.status(404).send({ error: 'Pago no encontrado' })
+    if (pago.restaurante_id !== rid) return reply.status(403).send({ error: 'No autorizado' })
+    if (pago.estado !== 'pendiente') return reply.status(400).send({ error: 'El pago ya fue confirmado' })
+
+    if (pago.split_type === 'yo_invito') {
+      await Pedido.marcarTodoPagado(pago.mesa_id)
+    } else {
+      await Pedido.marcarPagado(pago.mesa_id, pago.usuario_id)
+    }
+
+    await Pago.confirmar(Number(pagoId), meseroId)
+
+    app.io.to(`room:mesa:${rid}:${pago.mesa_id}`).emit('item:pagado', { usuarioId: pago.usuario_id, split: pago.split_type })
+    app.io.to(`room:restaurante:${rid}`).emit('item:pagado', { mesaId: pago.mesa_id, usuarioId: pago.usuario_id, split: pago.split_type })
+    app.io.to(`room:mesa:${rid}:${pago.mesa_id}`).emit('pago:confirmado', { pagoId: pago.id, mesaId: pago.mesa_id })
+    app.io.to(`room:restaurante:${rid}`).emit('pago:confirmado', { pagoId: pago.id, mesaId: pago.mesa_id })
+
+    const pendientes = await Pedido.pendientesSinPagar(pago.mesa_id)
+    if (pendientes === 0) {
+      await Mesa.setEstado(rid, pago.mesa_id, 'pagada')
+      app.io.to(`room:restaurante:${rid}`).emit('mesa:estado', { mesaId: pago.mesa_id, estado: 'pagada' })
+      app.io.to(`room:mesa:${rid}:${pago.mesa_id}`).emit('mesa:estado', { mesaId: pago.mesa_id, estado: 'pagada' })
     }
 
     return { success: true }
