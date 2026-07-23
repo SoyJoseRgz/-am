@@ -1,8 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { User, Plus, Wallet, Banknote, Landmark, Percent } from 'lucide-react'
+import { User, Plus, Wallet, Banknote, Landmark, Percent, Copy, Check } from 'lucide-react'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
+
+function DepositoField({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-[#888] uppercase tracking-wider shrink-0 w-12">{label}</span>
+      <span className="text-[11px] text-[#111] font-mono tracking-wider break-all">{value}</span>
+      <button onClick={async () => { try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {} }}
+        className="shrink-0 ml-auto text-[#bbb] hover:text-[#111] transition-colors">
+        {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+      </button>
+    </div>
+  )
+}
 
 interface ItemData {
   id: number; pedido_id: number; platillo_id: number; usuario_id: number
@@ -25,12 +39,14 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const [split, setSplit] = useState<'individual' | 'iguales' | 'yo_invito'>('individual')
   const [tip, setTip] = useState(0)
   const [tipCustom, setTipCustom] = useState('')
+  const [tipMode, setTipMode] = useState<'pct' | 'amount'>('pct')
+  const [tipFijo, setTipFijo] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [metodo, setMetodo] = useState<'efectivo' | 'deposito'>('efectivo')
   const [cambioPara, setCambioPara] = useState('')
   const [pagoEnviando, setPagoEnviando] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [depositoInfo, setDepositoInfo] = useState<{ banco: string; clabe: string; titular: string } | null>(null)
+  const [depositoInfo, setDepositoInfo] = useState<{ banco: string; clabe: string; numero_tarjeta?: string; titular: string } | null>(null)
   const user = getCurrentUser()
 
   useEffect(() => {
@@ -73,17 +89,20 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   const todosPagados = personas.every(p => p.entregados.every(i => i.pagado))
   const total = personas.flatMap(p => p.entregados).filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
   const tipPct = tip === -1 ? Number(tipCustom) || 0 : tip
-  const tipAmount = total * tipPct / 100
-  const granTotal = total + tipAmount
+  const tipMonto = tipMode === 'amount' ? (Number(tipFijo) || 0) : total * tipPct / 100
+  const granTotal = total + tipMonto
   const porPersonaTotal = personas.length > 0 ? granTotal / personas.length : 0
-  const userDeuda = split === 'yo_invito' ? granTotal : split === 'iguales' ? porPersonaTotal : userSubtotal
+  const userDeuda = split === 'yo_invito' ? granTotal
+    : split === 'iguales' ? porPersonaTotal
+    : total > 0 ? userSubtotal + (userSubtotal / total) * tipMonto
+    : userSubtotal
 
   async function pagar() {
     setPagoEnviando(true)
     try {
       await api('/api/pedidos/pagar', {
         method: 'POST',
-        body: JSON.stringify({ mesa_id: Number(mesaId), split, metodo_pago: metodo, cambio_para: cambioPara || null, tip: tipPct }),
+        body: JSON.stringify({ mesa_id: Number(mesaId), split, metodo_pago: metodo, cambio_para: cambioPara || null, tip: tipMode === 'amount' ? 0 : tipPct, tip_monto: tipMode === 'amount' ? tipMonto : 0 }),
       })
       setShowModal(false)
       cargar(); props?.onPagoCompletado?.()
@@ -252,8 +271,8 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                   <span>${total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px] text-[#888]">
-                  <span>propina ({tipPct}%)</span>
-                  <span>${tipAmount.toFixed(2)}</span>
+                  <span>propina {tipMode === 'amount' ? '' : `(${tipPct}%)`}</span>
+                  <span>${tipMonto.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-[#ddd]">
                   <span>total mesa</span>
@@ -279,7 +298,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             {!esGrupo && (
               <div className="border-t border-dashed border-[#ddd] pt-3 flex justify-between text-base font-bold">
                 <span>total</span>
-                <span>${(userSubtotal + tipAmount).toFixed(2)}</span>
+                <span>${(userSubtotal + tipMonto).toFixed(2)}</span>
               </div>
             )}
 
@@ -312,12 +331,13 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                 </div>
               )}
               {metodo === 'deposito' && depositoInfo && (
-                <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 space-y-1.5 mt-1">
-                  <p className="text-[11px] font-medium text-[#111] flex items-center gap-1">
+                <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 space-y-2.5 mt-1">
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-[#111]">
                     <Landmark className="w-3 h-3" /> {depositoInfo.banco}
-                  </p>
-                  <p className="text-[11px] text-[#666] font-mono">{depositoInfo.clabe}</p>
-                  <p className="text-[11px] text-[#888]">{depositoInfo.titular}</p>
+                  </div>
+                  <DepositoField label="CLABE" value={depositoInfo.clabe} />
+                  {depositoInfo.numero_tarjeta && <DepositoField label="Tarjeta" value={depositoInfo.numero_tarjeta} />}
+                  <div className="text-[11px] text-[#888]">{depositoInfo.titular}</div>
                 </div>
               )}
               {metodo === 'deposito' && !depositoInfo && (
@@ -331,25 +351,39 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               </p>
               <div className="flex gap-1 flex-wrap">
                 {[0, 10, 15, 20].map(t => (
-                  <button key={t} onClick={() => setTip(t)}
+                  <button key={t} onClick={() => { setTip(t); setTipMode('pct'); setTipFijo('') }}
                     className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                      tip === t ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                      tip === t && tipMode === 'pct' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
                     }`}>
                     {t}%
                   </button>
                 ))}
-                <button onClick={() => { setTip(-1); setTipCustom('') }}
+                <button onClick={() => { setTip(-1); setTipCustom(''); setTipMode('pct'); setTipFijo('') }}
                   className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                    tip === -1 ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                    tip === -1 && tipMode === 'pct' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
                   }`}>
                   otro
                 </button>
+                <button onClick={() => { setTip(-2); setTipMode('amount'); setTipCustom('') }}
+                  className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
+                    tipMode === 'amount' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                  }`}>
+                  fijo
+                </button>
               </div>
-              {tip === -1 && (
+              {tip === -1 && tipMode === 'pct' && (
                 <div className="flex items-center gap-2">
                   <input type="number" min="0" max="100" placeholder="%"
                     value={tipCustom} onChange={e => setTipCustom(e.target.value.replace(/\D/g, '').slice(0, 3))}
                     className="w-16 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
+                </div>
+              )}
+              {tipMode === 'amount' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-[#888]">$</span>
+                  <input type="number" min="0" placeholder="0"
+                    value={tipFijo} onChange={e => setTipFijo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-20 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
                 </div>
               )}
             </div>

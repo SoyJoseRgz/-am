@@ -4,6 +4,7 @@ import { api } from '../../services/api'
 export default function AdminDeposito() {
   const [banco, setBanco] = useState('')
   const [clabe, setClabe] = useState('')
+  const [tarjeta, setTarjeta] = useState('')
   const [titular, setTitular] = useState('')
   const [activo, setActivo] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -13,7 +14,7 @@ export default function AdminDeposito() {
     api<any>('/api/admin/deposito').then(d => {
       const info = d.deposito_info
       if (info) {
-        setBanco(info.banco || ''); setClabe(info.clabe || ''); setTitular(info.titular || ''); setActivo(true)
+        setBanco(info.banco || ''); setClabe(info.clabe || ''); setTarjeta(info.numero_tarjeta || ''); setTitular(info.titular || ''); setActivo(true)
       }
     }).finally(() => setLoading(false))
   }, [])
@@ -23,7 +24,7 @@ export default function AdminDeposito() {
     try {
       await api('/api/admin/deposito', {
         method: 'PUT',
-        body: JSON.stringify({ deposito_info: activo ? { banco, clabe, titular } : null }),
+        body: JSON.stringify({ deposito_info: activo ? { banco, clabe, numero_tarjeta: tarjeta, titular } : null }),
       })
       setMsg(activo ? 'Datos de depósito guardados' : 'Depósito deshabilitado')
     } catch (e: any) {
@@ -54,6 +55,11 @@ export default function AdminDeposito() {
           <div className="space-y-1">
             <label className="text-xs text-gray-500 font-medium">CLABE</label>
             <input value={clabe} onChange={e => setClabe(e.target.value)} placeholder="18 dígitos"
+              className="w-full h-10 border border-gray-200 rounded-md px-3 text-sm outline-none focus:border-black font-mono" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-gray-500 font-medium">Número de tarjeta</label>
+            <input value={tarjeta} onChange={e => setTarjeta(e.target.value)} placeholder="16 dígitos"
               className="w-full h-10 border border-gray-200 rounded-md px-3 text-sm outline-none focus:border-black font-mono" />
           </div>
           <div className="space-y-1">
