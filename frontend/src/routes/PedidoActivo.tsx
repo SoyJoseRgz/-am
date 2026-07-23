@@ -66,6 +66,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
   }
   const personas = Object.values(groups)
 
+  const esGrupo = personas.length > 1
   const userGroup = personas.find(p => p.entregados[0]?.usuario_id === user.id || p.preparando[0]?.usuario_id === user.id)
   const userItemsNoPagados = userGroup?.entregados.filter(i => !i.pagado) || []
   const userSubtotal = userItemsNoPagados.reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0)
@@ -169,16 +170,25 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                 <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase text-center flex items-center justify-center gap-1">
                   <Wallet className="w-3 h-3" /> - - - pagar - - -
                 </p>
-                <div className="flex gap-1.5 justify-center">
-                  {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                    <button key={s} onClick={() => { setSplit(s); setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
-                      className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
-                        split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                      }`}>
-                      {s === 'individual' ? 'cada quien' : s === 'iguales' ? 'iguales' : 'invito'}
+                {esGrupo ? (
+                  <div className="flex gap-1.5 justify-center">
+                    {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
+                      <button key={s} onClick={() => { setSplit(s); setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
+                        className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
+                          split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
+                        }`}>
+                        {s === 'individual' ? 'cada quien' : s === 'iguales' ? 'iguales' : 'invito'}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex justify-center">
+                    <button onClick={() => { setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
+                      className="text-[11px] px-4 py-1.5 border border-dashed border-[#111] text-[#111] font-medium hover:bg-gray-50 transition">
+                      Pagar — ${userSubtotal.toFixed(2)}
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -212,9 +222,66 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
           <div className="bg-white rounded-xl w-full max-w-sm p-5 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-lg">Pagar</h3>
 
-            <div className="text-[11px] text-[#888] space-y-0.5">
-              <p>{split === 'individual' ? `tus items — $${userSubtotal.toFixed(2)}` : split === 'iguales' ? `$${porPersonaTotal.toFixed(2)} c/u` : `tú pagas todo — $${granTotal.toFixed(2)}`}</p>
-            </div>
+            {/* items del usuario */}
+            {userItemsNoPagados.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase flex items-center gap-1">
+                  <User className="w-3 h-3" /> tu cuenta
+                </p>
+                <div className="divide-y divide-dashed divide-[#eee]">
+                  {userItemsNoPagados.map(item => (
+                    <div key={item.id} className="flex justify-between py-0.5 text-[11px]">
+                      <span className="text-[#111]">{item.cantidad} {item.nombre}</span>
+                      <span className="text-[#888]">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-[#ddd]">
+                  <span>subtotal</span>
+                  <span>${userSubtotal.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* grupo: total mesa */}
+            {esGrupo && (
+              <div className="space-y-1">
+                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase">total mesa</p>
+                <div className="flex justify-between text-[11px] text-[#888]">
+                  <span>subtotal mesa</span>
+                  <span>${total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-[#888]">
+                  <span>propina ({tipPct}%)</span>
+                  <span>${tipAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-[#ddd]">
+                  <span>total mesa</span>
+                  <span>${granTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            )}
+
+            {/* grupo: tu parte */}
+            {esGrupo && (
+              <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 text-center">
+                <p className="text-[10px] text-[#888] tracking-[0.15em] uppercase mb-1">
+                  {split === 'individual' ? 'tu parte (individual)' : split === 'iguales' ? 'tu parte (iguales)' : 'invitas tú'}
+                </p>
+                <p className="text-lg font-bold">${userDeuda.toFixed(2)}</p>
+                {split === 'iguales' && (
+                  <p className="text-[10px] text-[#aaa] mt-0.5">{personas.length} personas</p>
+                )}
+              </div>
+            )}
+
+            {/* solo: total */}
+            {!esGrupo && (
+              <div className="border-t border-dashed border-[#ddd] pt-3 flex justify-between text-base font-bold">
+                <span>total</span>
+                <span>${(userSubtotal + tipAmount).toFixed(2)}</span>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <p className="text-[11px] text-[#888] tracking-wider uppercase flex items-center gap-1">
@@ -285,11 +352,6 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                     className="w-16 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
                 </div>
               )}
-            </div>
-
-            <div className="border-t border-dashed border-[#ddd] pt-3 flex justify-between text-base font-bold">
-              <span>total</span>
-              <span>${granTotal.toFixed(2)}</span>
             </div>
 
             <button onClick={pagar} disabled={pagoEnviando}
