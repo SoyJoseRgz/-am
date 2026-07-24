@@ -31,6 +31,7 @@ services:
       DATABASE_URL: postgres://${DB_USER:-miresto}:${DB_PASSWORD:-miresto}@postgres:5432/${DB_NAME:-miresto}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
+      DOMAIN: ${DOMAIN:-miresto.app}
       FOTOS_DIR: /var/www/fotos
       NODE_ENV: production
     volumes:

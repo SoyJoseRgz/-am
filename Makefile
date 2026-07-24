@@ -20,13 +20,13 @@ deploy: build up
 	@echo "Deploy complete"
 
 ssl-init:
-	@echo "Setting up Let's Encrypt..."
+	@echo "Setting up Let's Encrypt for $(DOMAIN)..."
 	docker compose run --rm certbot certonly --webroot \
 		--webroot-path=/var/www/certbot \
-		--email admin@miresto.app \
+		--email $(EMAIL) \
 		--agree-tos \
 		--no-eff-email \
-		-d miresto.app
+		-d $(DOMAIN)
 
 ssl-renew:
 	docker compose run --rm certbot renew

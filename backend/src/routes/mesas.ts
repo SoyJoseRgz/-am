@@ -71,7 +71,8 @@ export default async function mesaRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Mesa no encontrada' })
     }
 
-    const url = `https://miresto.app/m/${mesa.restaurante_id}/${mesa.id}`
+    const domain = process.env.DOMAIN || request.hostname
+    const url = `https://${domain}/m/${mesa.restaurante_id}/${mesa.id}`
     const qr = await QRCode.toBuffer(url, { type: 'png', width: 400, margin: 2 })
 
     reply.header('Content-Type', 'image/png')
