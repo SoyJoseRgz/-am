@@ -47,9 +47,10 @@ function Home() {
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken')
+    if (!token) { navigate('/login', { replace: true }); return }
     const rid = localStorage.getItem('lastMesa_restauranteId')
     const mid = localStorage.getItem('lastMesa_mesaId')
-    if (!token || !rid || !mid) return
+    if (!rid || !mid) return
     api('/api/mesas/' + mid + '?restaurante_id=' + rid).then((d: any) => {
       if (d.comensales?.some((c: any) => c.usuario_id === user?.id)) {
         navigate('/m/' + rid + '/' + mid, { replace: true })
@@ -239,6 +240,8 @@ function AuthScreen() {
     if (!userStr) return
     try {
       const user = JSON.parse(userStr)
+      const redirect = new URLSearchParams(window.location.search).get('redirect')
+      if (redirect && redirect.startsWith('/')) { navigate(redirect, { replace: true }); return }
       if (user.rol && user.rol !== 'comensal') {
         navigate(redirectPorRol(user.rol), { replace: true })
       }
@@ -272,7 +275,12 @@ function AuthScreen() {
         return
       }
 
-      navigate(redirectPorRol(data.usuario.rol), { replace: true })
+      const redirectAfterLogin = new URLSearchParams(window.location.search).get('redirect')
+      if (redirectAfterLogin && redirectAfterLogin.startsWith('/')) {
+        navigate(redirectAfterLogin, { replace: true })
+      } else {
+        navigate(redirectPorRol(data.usuario.rol), { replace: true })
+      }
     } catch {
       setError('Error de conexión')
     } finally {
