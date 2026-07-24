@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { User, Plus, Wallet, Banknote, Landmark, Percent, Copy, Check, X } from 'lucide-react'
+import { Button } from '../components/ui/button'
 import { api, getCurrentUser } from '../services/api'
 import { connectToMesa, socket } from '../services/socket'
 
@@ -8,12 +9,11 @@ function DepositoField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] text-[#888] uppercase tracking-wider shrink-0 w-12">{label}</span>
-      <span className="text-[11px] text-[#111] font-mono tracking-wider break-all">{value}</span>
-      <button onClick={async () => { try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {} }}
-        className="shrink-0 ml-auto text-[#bbb] hover:text-[#111] transition-colors">
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider shrink-0 w-12">{label}</span>
+      <span className="text-[11px] text-foreground font-mono tracking-wider break-all">{value}</span>
+      <Button variant="ghost" size="icon-xs" className="shrink-0 ml-auto text-muted-foreground/60 hover:text-foreground" onClick={async () => { try { await navigator.clipboard.writeText(value); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch {} }}>
         {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-      </button>
+      </Button>
     </div>
   )
 }
@@ -141,46 +141,44 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
     <div className="text-sm leading-relaxed space-y-4">
       {noHay ? (
         <div className="text-center py-10 space-y-4">
-          <p className="text-[#888]">no hay pedidos activos</p>
-          <button onClick={() => props?.onSumarMas?.()}
-            className="text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline">menú</button>
+          <p className="text-muted-foreground">no hay pedidos activos</p>
+          <Button variant="link" onClick={() => props?.onSumarMas?.()} className="text-foreground underline underline-offset-2 decoration-dotted">menú</Button>
         </div>
       ) : (
         <>
           <div className="bg-white">
             <div className="text-center py-3 space-y-1">
-              <p className={`text-xs text-[#999] tracking-[0.2em] transition-opacity ${refreshing ? 'opacity-40' : ''}`}>- - - pedido - - -</p>
+              <p className={`text-xs text-muted-foreground/85 tracking-[0.2em] transition-opacity ${refreshing ? 'opacity-40' : ''}`}>- - - pedido - - -</p>
             </div>
 
-            <div className="divide-y divide-dashed divide-[#ddd]">
+            <div className="divide-y divide-dashed divide-muted-foreground/20">
               {personas.map((p, gi) => (
                 <div key={gi} className="py-3">
-                  <p className="text-[11px] text-[#bbb] tracking-[0.15em] uppercase mb-2 flex items-center gap-1.5">
+                  <p className="text-[11px] text-muted-foreground/60 tracking-[0.15em] uppercase mb-2 flex items-center gap-1.5">
                     <User className="w-3 h-3" />
                     {p.nombre}
                     {p.entregados.length > 0 && p.entregados.every(i => i.pagado) && p.preparando.length === 0
-                      ? <span className="text-[#aaa] ml-auto text-[10px] flex items-center gap-1">pagado</span>
+                      ? <span className="text-muted-foreground/70 ml-auto text-[10px] flex items-center gap-1">pagado</span>
                       : ''}
                   </p>
 
                   {p.preparando.length > 0 && (
                     <div className="mb-2">
-                      <p className="text-[10px] text-[#ccc] tracking-wider uppercase mb-1">en preparación</p>
+                      <p className="text-[10px] text-muted-foreground/50 tracking-wider uppercase mb-1">en preparación</p>
                       <div className="space-y-0.5">
                         {p.preparando.map(item => {
                           const esPendiente = item.estado === 'pendiente'
                           const esMio = item.usuario_id === user.id
                           return (
-                          <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-[#999]">
+                          <div key={item.id} className="flex items-baseline justify-between gap-1 py-0.5 text-muted-foreground/85">
                             <div className="flex items-baseline gap-1 min-w-0">
                               <span className="font-medium shrink-0">{item.cantidad}</span>
                               <span className="truncate text-[11px] italic">{item.nombre}</span>
                             </div>
                             {esPendiente && esMio && (
-                              <button onClick={() => cancelarItem(item)} disabled={cancelandoItem === item.id}
-                                className="shrink-0 w-5 h-5 flex items-center justify-center text-[10px] text-red-300 hover:text-red-500 border border-red-100 hover:border-red-300 rounded-full transition">
+                              <Button variant="outline" size="icon-xs" className="shrink-0 text-red-300 hover:text-red-500 border-red-100 hover:border-red-300" onClick={() => cancelarItem(item)} disabled={cancelandoItem === item.id}>
                                 <X className="w-3 h-3" />
-                              </button>
+                              </Button>
                             )}
                           </div>
                         )})}
@@ -190,14 +188,14 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
                   {p.entregados.length > 0 && (
                     <>
-                      {p.preparando.length > 0 && <div className="border-t border-dotted border-[#eee] mb-2" />}
+                      {p.preparando.length > 0 && <div className="border-t border-dotted border-muted-foreground/15 mb-2" />}
                       <div className="space-y-0.5">
                         {p.entregados.map(item => {
                           const esPagado = item.pagado
                           return (
-                            <div key={item.id} className={`flex items-baseline justify-between gap-1 py-0.5 ${esPagado ? 'text-[#ddd]' : 'text-[#111]'}`}>
+                            <div key={item.id} className={`flex items-baseline justify-between gap-1 py-0.5 ${esPagado ? 'text-muted-foreground/20' : 'text-foreground'}`}>
                               <div className="flex items-baseline gap-1 min-w-0">
-                                {esPagado && <span className="text-[10px] text-[#ccc] shrink-0">✓</span>}
+                                {esPagado && <span className="text-[10px] text-muted-foreground/50 shrink-0">✓</span>}
                                 <span className="font-medium shrink-0">{item.cantidad}</span>
                                 <span className="truncate text-[11px]">{item.nombre}</span>
                               </div>
@@ -206,7 +204,7 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
                           )
                         })}
                       </div>
-                      <div className="flex items-baseline justify-between text-[11px] text-[#888] pt-1 mt-1 border-t border-dotted border-[#eee]">
+                      <div className="flex items-baseline justify-between text-[11px] text-muted-foreground pt-1 mt-1 border-t border-dotted border-muted-foreground/15">
                         <span>subtotal</span>
                         <span>${p.entregados.filter(i => !i.pagado).reduce((s, i) => s + Number(i.precio_unitario) * i.cantidad, 0).toFixed(2)}</span>
                       </div>
@@ -217,27 +215,26 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             </div>
 
             {!todosPagados && userItemsNoPagados.length > 0 && (
-              <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 space-y-2">
-                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase text-center flex items-center justify-center gap-1">
+              <div className="border-t border-dashed border-muted-foreground/20 pt-3 pb-1 space-y-2">
+                <p className="text-[10px] text-muted-foreground/85 tracking-[0.15em] uppercase text-center flex items-center justify-center gap-1">
                   <Wallet className="w-3 h-3" /> - - - pagar - - -
                 </p>
                 {esGrupo ? (
                   <div className="flex gap-1.5 justify-center">
                     {(['individual', 'iguales', 'yo_invito'] as const).map(s => (
-                      <button key={s} onClick={() => { setSplit(s); setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
-                        className={`text-[11px] px-3 py-1.5 border border-dashed transition ${
-                          split === s ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                        }`}>
+                      <Button key={s} variant="outline" size="xs"
+                        className={`border-dashed ${split === s ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                        onClick={() => { setSplit(s); setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}>
                         {s === 'individual' ? 'cada quien' : s === 'iguales' ? 'iguales' : 'invito'}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ) : (
                   <div className="flex justify-center">
-                    <button onClick={() => { setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}
-                      className="text-[11px] px-4 py-1.5 border border-dashed border-[#111] text-[#111] font-medium hover:bg-gray-50 transition">
+                    <Button variant="outline" size="xs" className="border-dashed border-foreground text-foreground font-medium h-auto px-4 py-1.5"
+                      onClick={() => { setShowModal(true); setMetodo('efectivo'); setCambioPara('') }}>
                       Pagar — ${(userSubtotal + (ivaIncluido ? 0 : userSubtotal * ivaPct / 100)).toFixed(2)}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -247,13 +244,13 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               <p className="text-[11px] text-red-500 text-center bg-red-50 border border-red-100 rounded-md px-3 py-2">{cancelError}</p>
             )}
             {cancelados.length > 0 && (
-              <details className="border-t border-dashed border-[#ddd]">
-                <summary className="py-2 text-[11px] text-[#bbb] cursor-pointer hover:text-[#888] tracking-wider uppercase text-center">
+              <details className="border-t border-dashed border-muted-foreground/20">
+                <summary className="py-2 text-[11px] text-muted-foreground/60 cursor-pointer hover:text-muted-foreground tracking-wider uppercase text-center">
                   [{cancelados.length} cancelado{cancelados.length > 1 ? 's' : ''}]
                 </summary>
                 <div className="pb-2 space-y-1">
                   {cancelados.map(item => (
-                    <p key={item.id} className="text-[11px] text-[#bbb] line-through">
+                    <p key={item.id} className="text-[11px] text-muted-foreground/60 line-through">
                       {item.cantidad} {item.nombre}
                     </p>
                   ))}
@@ -261,11 +258,10 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
               </details>
             )}
 
-            <div className="border-t border-dashed border-[#ddd] pt-3 pb-1 text-center">
-              <button onClick={() => props?.onSumarMas?.()}
-                className="text-[11px] text-[#888] underline underline-offset-2 decoration-dotted hover:text-[#111] uppercase tracking-wider flex items-center justify-center gap-1 mx-auto">
+            <div className="border-t border-dashed border-muted-foreground/20 pt-3 pb-1 text-center">
+              <Button variant="link" size="xs" className="text-muted-foreground hover:text-foreground uppercase tracking-wider gap-1" onClick={() => props?.onSumarMas?.()}>
                 <Plus className="w-3 h-3" /> pedir algo más
-              </button>
+              </Button>
             </div>
           </div>
         </>
@@ -279,18 +275,18 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             {/* items del usuario */}
             {userItemsNoPagados.length > 0 && (
               <div className="space-y-1">
-                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase flex items-center gap-1">
+                <p className="text-[10px] text-muted-foreground/85 tracking-[0.15em] uppercase flex items-center gap-1">
                   <User className="w-3 h-3" /> tu cuenta
                 </p>
-                <div className="divide-y divide-dashed divide-[#eee]">
+                <div className="divide-y divide-dashed divide-muted-foreground/15">
                   {userItemsNoPagados.map(item => (
                     <div key={item.id} className="flex justify-between py-0.5 text-[11px]">
-                      <span className="text-[#111]">{item.cantidad} {item.nombre}</span>
-                      <span className="text-[#888]">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
+                      <span className="text-foreground">{item.cantidad} {item.nombre}</span>
+                      <span className="text-muted-foreground">${(Number(item.precio_unitario) * item.cantidad).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
-                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-[#ddd]">
+                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-muted-foreground/20">
                   <span>subtotal</span>
                   <span>${userSubtotal.toFixed(2)}</span>
                 </div>
@@ -300,20 +296,20 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             {/* grupo: total mesa */}
             {esGrupo && (
               <div className="space-y-1">
-                <p className="text-[10px] text-[#999] tracking-[0.15em] uppercase">total mesa</p>
-                <div className="flex justify-between text-[11px] text-[#888]">
+                <p className="text-[10px] text-muted-foreground/85 tracking-[0.15em] uppercase">total mesa</p>
+                <div className="flex justify-between text-[11px] text-muted-foreground">
                   <span>subtotal mesa</span>
                   <span>${total.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px] text-[#888]">
+                <div className="flex justify-between text-[11px] text-muted-foreground">
                   <span>IVA ({ivaPct}%){ivaIncluido ? ' incl.' : ''}</span>
                   <span>${ivaMonto.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px] text-[#888]">
+                <div className="flex justify-between text-[11px] text-muted-foreground">
                   <span>propina {tipMode === 'amount' ? '' : `(${tipPct}%)`}</span>
                   <span>${tipMonto.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-[#ddd]">
+                <div className="flex justify-between text-[11px] font-medium pt-1 border-t border-dashed border-muted-foreground/20">
                   <span>total mesa</span>
                   <span>${granTotal.toFixed(2)}</span>
                 </div>
@@ -322,107 +318,100 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
 
             {/* grupo: tu parte */}
             {esGrupo && (
-              <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 text-center">
-                <p className="text-[10px] text-[#888] tracking-[0.15em] uppercase mb-1">
+              <div className="bg-muted border border-dashed border-muted-foreground/20 rounded-md p-3 text-center">
+                <p className="text-[10px] text-muted-foreground tracking-[0.15em] uppercase mb-1">
                   {split === 'individual' ? 'tu parte (individual)' : split === 'iguales' ? 'tu parte (iguales)' : 'invitas tú'}
                 </p>
                 <p className="text-lg font-bold">${userDeuda.toFixed(2)}</p>
                 {split === 'iguales' && (
-                  <p className="text-[10px] text-[#aaa] mt-0.5">{personas.length} personas</p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-0.5">{personas.length} personas</p>
                 )}
               </div>
             )}
 
             {/* solo: total */}
             {!esGrupo && (
-              <div className="border-t border-dashed border-[#ddd] pt-3 flex justify-between text-base font-bold">
+              <div className="border-t border-dashed border-muted-foreground/20 pt-3 flex justify-between text-base font-bold">
                 <span>total</span>
                 <span>${(userSubtotal + (ivaIncluido ? 0 : userSubtotal * ivaPct / 100) + tipMonto).toFixed(2)}</span>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <p className="text-[11px] text-[#888] tracking-wider uppercase flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground tracking-wider uppercase flex items-center gap-1">
                 <Wallet className="w-3 h-3" /> método de pago
               </p>
               <div className="flex gap-1.5">
-                <button onClick={() => setMetodo('efectivo')}
-                  className={`text-[11px] px-3 py-1.5 border border-dashed transition flex items-center gap-1 ${
-                    metodo === 'efectivo' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                  }`}>
+                <Button variant="outline" size="xs" className={`border-dashed gap-1 ${metodo === 'efectivo' ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                  onClick={() => setMetodo('efectivo')}>
                   <Banknote className="w-3 h-3" /> efectivo
-                </button>
+                </Button>
                 {depositoInfo && (
-                  <button onClick={() => setMetodo('deposito')}
-                    className={`text-[11px] px-3 py-1.5 border border-dashed transition flex items-center gap-1 ${
-                      metodo === 'deposito' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                    }`}>
+                  <Button variant="outline" size="xs" className={`border-dashed gap-1 ${metodo === 'deposito' ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                    onClick={() => setMetodo('deposito')}>
                     <Landmark className="w-3 h-3" /> depósito
-                  </button>
+                  </Button>
                 )}
               </div>
               {metodo === 'efectivo' && (
                 <div className="flex items-center gap-2 pt-1">
-                  <span className="text-[11px] text-[#888] shrink-0">¿cambio de?</span>
+                  <span className="text-[11px] text-muted-foreground shrink-0">¿cambio de?</span>
                   <input type="number" min="0" placeholder="$"
                     value={cambioPara} onChange={e => setCambioPara(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-20 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
+                    className="w-20 h-7 text-center text-[11px] border border-dashed border-muted-foreground/20 outline-none focus:border-foreground font-mono" />
                 </div>
               )}
               {metodo === 'deposito' && depositoInfo && (
-                <div className="bg-gray-50 border border-dashed border-[#ddd] rounded-md p-3 space-y-2.5 mt-1">
-                  <div className="flex items-center gap-1 text-[11px] font-medium text-[#111]">
+                <div className="bg-muted border border-dashed border-muted-foreground/20 rounded-md p-3 space-y-2.5 mt-1">
+                  <div className="flex items-center gap-1 text-[11px] font-medium text-foreground">
                     <Landmark className="w-3 h-3" /> {depositoInfo.banco}
                   </div>
                   <DepositoField label="CLABE" value={depositoInfo.clabe} />
                   {depositoInfo.numero_tarjeta && <DepositoField label="Tarjeta" value={depositoInfo.numero_tarjeta} />}
-                  <div className="text-[11px] text-[#888]">{depositoInfo.titular}</div>
+                  <div className="text-[11px] text-muted-foreground">{depositoInfo.titular}</div>
                 </div>
               )}
               {metodo === 'deposito' && !depositoInfo && (
-                <p className="text-[11px] text-[#aaa]">pide los datos de depósito al mesero</p>
+                <p className="text-[11px] text-muted-foreground/70">pide los datos de depósito al mesero</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <p className="text-[11px] text-[#888] tracking-wider uppercase flex items-center gap-1">
+              <p className="text-[11px] text-muted-foreground tracking-wider uppercase flex items-center gap-1">
                 <Percent className="w-3 h-3" /> propina
               </p>
               <div className="flex gap-1 flex-wrap">
                 {[0, 10, 15, 20].map(t => (
-                  <button key={t} onClick={() => { setTip(t); setTipMode('pct'); setTipFijo('') }}
-                    className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                      tip === t && tipMode === 'pct' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                    }`}>
+                  <Button key={t} variant="outline" size="xs"
+                    className={`border-dashed h-auto px-2 py-0.5 ${tip === t && tipMode === 'pct' ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                    onClick={() => { setTip(t); setTipMode('pct'); setTipFijo('') }}>
                     {t}%
-                  </button>
+                  </Button>
                 ))}
-                <button onClick={() => { setTip(-1); setTipCustom(''); setTipMode('pct'); setTipFijo('') }}
-                  className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                    tip === -1 && tipMode === 'pct' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                  }`}>
+                <Button variant="outline" size="xs"
+                  className={`border-dashed h-auto px-2 py-0.5 ${tip === -1 && tipMode === 'pct' ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                  onClick={() => { setTip(-1); setTipCustom(''); setTipMode('pct'); setTipFijo('') }}>
                   otro
-                </button>
-                <button onClick={() => { setTip(-2); setTipMode('amount'); setTipCustom('') }}
-                  className={`text-[11px] px-2 py-0.5 border border-dashed transition ${
-                    tipMode === 'amount' ? 'border-[#111] text-[#111] font-medium' : 'border-[#ddd] text-[#bbb] hover:border-[#888]'
-                  }`}>
+                </Button>
+                <Button variant="outline" size="xs"
+                  className={`border-dashed h-auto px-2 py-0.5 ${tipMode === 'amount' ? 'border-foreground text-foreground font-medium' : 'border-muted-foreground/20 text-muted-foreground/60 hover:border-muted-foreground'}`}
+                  onClick={() => { setTip(-2); setTipMode('amount'); setTipCustom('') }}>
                   fijo
-                </button>
+                </Button>
               </div>
               {tip === -1 && tipMode === 'pct' && (
                 <div className="flex items-center gap-2">
                   <input type="number" min="0" max="100" placeholder="%"
                     value={tipCustom} onChange={e => setTipCustom(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                    className="w-16 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
+                    className="w-16 h-7 text-center text-[11px] border border-dashed border-muted-foreground/20 outline-none focus:border-foreground font-mono" />
                 </div>
               )}
               {tipMode === 'amount' && (
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-[#888]">$</span>
+                  <span className="text-[11px] text-muted-foreground">$</span>
                   <input type="number" min="0" placeholder="0"
                     value={tipFijo} onChange={e => setTipFijo(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="w-20 h-7 text-center text-[11px] border border-dashed border-[#ddd] outline-none focus:border-[#111] font-mono" />
+                    className="w-20 h-7 text-center text-[11px] border border-dashed border-muted-foreground/20 outline-none focus:border-foreground font-mono" />
                 </div>
               )}
             </div>
@@ -430,10 +419,9 @@ export default function PedidoActivo(props?: { restauranteId?: string; mesaId?: 
             {pagoError && (
               <p className="text-[11px] text-red-500 text-center bg-red-50 border border-red-100 rounded-md px-3 py-2">{pagoError}</p>
             )}
-            <button onClick={pagar} disabled={pagoEnviando}
-              className="w-full py-3 text-sm font-medium text-white bg-[#111] hover:bg-[#000] transition disabled:opacity-40">
+            <Button className="w-full" onClick={pagar} disabled={pagoEnviando}>
               {pagoEnviando ? 'enviando...' : `solicitar pago $${userDeuda.toFixed(2)}`}
-            </button>
+            </Button>
           </div>
         </div>
       )}

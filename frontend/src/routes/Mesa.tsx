@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ShoppingCart, Users, X, Bell, LogOut, Landmark } from 'lucide-react'
+import { ShoppingCart, Users, X, Bell, LogOut, Landmark, Wallet } from 'lucide-react'
+import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Separator } from '../components/ui/separator'
 import { api, getCurrentUser, clearAppData } from '../services/api'
@@ -155,26 +156,26 @@ function MesaInner() {
     } catch { setPerfilError('Error de conexión') }
   }
 
-  if (loading && !joinAttempted) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex items-center justify-center"><p className="text-[#888]">Uniéndote a la mesa...</p></div>
-  if (pagoCompletado) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Gracias por tu pago</h2><p className="text-xs text-[#888]">Tu cuenta está liquidada. Puedes salir o escanear el QR si deseas ordenar de nuevo.</p><button onClick={() => { limpiarCarrito(); navigate('/') }} className="h-10 px-6 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Salir</button></div>
+  if (loading && !joinAttempted) return <div className="min-h-screen bg-background text-foreground flex items-center justify-center"><p className="text-muted-foreground">Uniéndote a la mesa...</p></div>
+  if (pagoCompletado) return <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Gracias por tu pago</h2><p className="text-xs text-muted-foreground">Tu cuenta está liquidada. Puedes salir o escanear el QR si deseas ordenar de nuevo.</p><Button onClick={() => { limpiarCarrito(); navigate('/') }}>Salir</Button></div>
 
-  if (error && !mesa) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><button onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }} className="text-sm text-[#888] hover:text-[#111] underline underline-offset-2">← Volver</button></div>
+  if (error && !mesa) return <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4"><p className="text-red-500 text-lg mb-4">{error}</p><Button variant="link" className="text-sm text-muted-foreground hover:text-foreground" onClick={() => { localStorage.removeItem('lastMesa_restauranteId'); localStorage.removeItem('lastMesa_mesaId'); navigate('/') }}>← Volver</Button></div>
 
-  if (cuentaCerrada) return <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Cuenta cerrada</h2><p className="text-xs text-[#888]">Gracias por tu visita. Serás redirigido en unos segundos.</p><button onClick={() => { limpiarCarrito(); navigate('/') }} className="h-10 px-6 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Salir ahora</button></div>
+  if (cuentaCerrada) return <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 text-center space-y-4"><h2 className="text-xl font-bold">Cuenta cerrada</h2><p className="text-xs text-muted-foreground">Gracias por tu visita. Serás redirigido en unos segundos.</p><Button onClick={() => { limpiarCarrito(); navigate('/') }}>Salir ahora</Button></div>
 
   if (!mesa) return null
 
   return (
     <>
-    <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* header */}
-      <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
+      <div className="w-full border-b border-border bg-white/80 backdrop-blur-sm">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <h1 className="text-base font-medium shrink-0">Mesa {mesa.numero}</h1>
             {cuentaSolicitada && <span className="text-[9px] text-green-600 uppercase tracking-wider shrink-0">cuenta pedida</span>}
             {codigoInvitacion && (
-              <button onClick={async () => {
+              <Button variant="ghost" size="xs" onClick={async () => {
                 const text = `Únete a mi mesa con el código: ${codigoInvitacion}`
                 if (navigator.share) {
                   try { await navigator.share({ title: 'Código de invitación', text }) } catch {}
@@ -183,29 +184,28 @@ function MesaInner() {
                   setCodigoCopyOk(true)
                   setTimeout(() => setCodigoCopyOk(false), 2000)
                 }
-              }} className="flex items-center gap-1 font-mono text-[11px] text-[#888] hover:text-[#111] transition-colors shrink-0 whitespace-nowrap">
-                <span className="text-[9px] text-[#bbb] uppercase tracking-wider">código</span>
+              }} className="font-mono text-[11px] text-muted-foreground hover:text-foreground shrink-0 whitespace-nowrap items-center gap-1">
+                <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">código</span>
                 {codigoCopyOk ? (
                   <span className="text-green-500 font-medium">copiado</span>
                 ) : (
-                  <span className="border-b border-dotted border-[#ccc] hover:border-[#888] font-medium">{codigoInvitacion}</span>
+                  <span className="border-b border-dotted border-muted-foreground/35 hover:border-muted-foreground font-medium">{codigoInvitacion}</span>
                 )}
-              </button>
+              </Button>
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={() => { setShowLlamar(true); if (llamarExito) { setLlamarExito(false); setLlamarMensaje('') } }} title="Llamar mesero"
-              className={`w-8 h-8 flex items-center justify-center rounded-md border transition-colors ${llamarExito ? 'bg-green-50 border-green-200 text-green-600' : 'border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111]'}`}>
+            <Button variant="outline" size="icon-sm" onClick={() => { setShowLlamar(true); if (llamarExito) { setLlamarExito(false); setLlamarMensaje('') } }} title="Llamar mesero"
+              className={llamarExito ? 'bg-green-50 border-green-200 text-green-600 hover:bg-green-50' : ''}>
               <Bell className="w-3.5 h-3.5" />
-            </button>
-            <button onClick={() => setShowMesa(true)} title="Comensales"
-              className="w-8 h-8 flex items-center justify-center rounded-md border border-[#e5ddd2] bg-white hover:bg-[#faf6f2] text-[#888] hover:text-[#111] transition-colors">
+            </Button>
+            <Button variant="outline" size="icon-sm" onClick={() => setShowMesa(true)} title="Comensales">
               <Users className="w-4 h-4" />
-            </button>
-            <button onClick={() => setShowPerfil(true)} title="Perfil"
-              className="w-8 h-8 rounded-full bg-[#111] text-white flex items-center justify-center text-xs font-bold shrink-0 hover:opacity-80 transition-opacity">
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={() => setShowPerfil(true)} title="Perfil"
+              className="rounded-full bg-primary text-primary-foreground hover:opacity-80 text-xs font-bold shrink-0">
               {usuarioNombre[0]}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -219,27 +219,27 @@ function MesaInner() {
 
       {/* barra de carrito fija */}
       {cartCount > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5ddd2] z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-20">
           <div className="max-w-lg mx-auto">
-            <button onClick={() => setShowCart(true)} className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#faf6f2] transition-colors ${bump ? 'animate-bump' : ''}`}>
+            <Button variant="ghost" onClick={() => setShowCart(true)} className={`w-full flex items-center gap-3 px-4 py-3 h-auto rounded-none ${bump ? 'animate-bump' : ''}`}>
               <div className="relative">
-                <ShoppingCart className="w-5 h-5 text-[#111]" />
-                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#111] text-white text-[8px] font-bold flex items-center justify-center">{cartCount}</span>
+                <ShoppingCart className="w-5 h-5 text-foreground" />
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[8px] font-bold flex items-center justify-center">{cartCount}</span>
               </div>
-              <span className="flex-1 text-xs text-[#888]">{cartCount} item{cartCount !== 1 ? 's' : ''}</span>
+              <span className="flex-1 text-xs text-muted-foreground">{cartCount} item{cartCount !== 1 ? 's' : ''}</span>
               <span className="text-sm font-semibold">${cartTotal.toFixed(2)}</span>
-              <span className="text-xs text-[#888]">Ver pedido →</span>
-            </button>
+              <span className="text-xs text-muted-foreground">Ver pedido →</span>
+            </Button>
           </div>
         </div>
       )}
       {cartCount === 0 && tienePedido && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#e5ddd2] z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-border z-20">
           <div className="max-w-lg mx-auto">
-            <button onClick={() => setShowCart(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 hover:bg-[#faf6f2] transition-colors">
+            <Button variant="ghost" onClick={() => setShowCart(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 h-auto rounded-none">
               <span className="text-sm font-medium">Mi pedido</span>
-              <span className="text-xs text-[#888]">→</span>
-            </button>
+              <span className="text-xs text-muted-foreground">→</span>
+            </Button>
           </div>
         </div>
       )}
@@ -247,12 +247,12 @@ function MesaInner() {
       {/* sheet de carrito */}
       {showCart && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => { setShowCart(false); setShowActivo(false) }}>
-          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
+          <div className="bg-background w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between z-10">
               <span className="font-semibold text-sm">
                 {showActivo ? 'Mi pedido' : items.length > 0 ? 'Revisa tu pedido' : 'Mi pedido'}
               </span>
-              <button onClick={() => { setShowCart(false); setShowActivo(false) }} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
+              <Button variant="outline" size="icon-xs" onClick={() => { setShowCart(false); setShowActivo(false) }}><X className="w-3.5 h-3.5" /></Button>
             </div>
             <div className="p-4">
               {showActivo ? (
@@ -261,10 +261,9 @@ function MesaInner() {
                 <div className="space-y-4">
                   <PrePedido restauranteId={restauranteId} mesaId={mesaId} usuarioNombre={usuarioNombre} onClose={() => { setShowCart(false); setShowActivo(false) }} onSuccess={() => { setTienePedido(true); setShowCart(false); setShowActivo(false) }} />
                   {tienePedido && (
-                    <button onClick={() => setShowActivo(true)}
-                      className="w-full h-10 text-xs border border-[#e5ddd2] text-[#888] hover:text-[#111] rounded-md flex items-center justify-center gap-1.5 transition">
+                    <Button variant="outline" className="w-full h-10 text-xs" onClick={() => setShowActivo(true)}>
                       Ver pedido activo →
-                    </button>
+                    </Button>
                   )}
                 </div>
               ) : tienePedido ? (
@@ -280,18 +279,18 @@ function MesaInner() {
       {/* sheet de mesa (info, comensales, llamar) */}
       {showMesa && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setShowMesa(false)}>
-          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-[80vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
+          <div className="bg-background w-full max-w-lg rounded-t-xl max-h-[80vh] overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between z-10">
               <span className="font-semibold text-sm">Mesa {mesa.numero}</span>
-              <button onClick={() => setShowMesa(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
+              <Button variant="outline" size="icon-xs" onClick={() => setShowMesa(false)}><X className="w-3.5 h-3.5" /></Button>
             </div>
             <div className="p-4 space-y-3">
-              {comensales.length === 0 && <p className="text-xs text-[#aaa] text-center py-8">Esperando comensales...</p>}
+              {comensales.length === 0 && <p className="text-xs text-muted-foreground/70 text-center py-8">Esperando comensales...</p>}
               <div className="flex flex-wrap gap-2">
                 {comensales.map(c => (
-                  <div key={c.usuario_id} className="bg-white border border-[#e5ddd2] rounded-full px-3 py-1.5 flex items-center gap-1.5 text-sm">
-                    <div className="w-6 h-6 rounded-full bg-[#111] text-white flex items-center justify-center text-[10px] font-bold shrink-0">{c.nombre[0]}</div>
-                    <span className={c.usuario_id === usuarioId ? 'font-medium text-sm' : 'text-[#888] text-sm'}>{c.nombre}{c.usuario_id === usuarioId ? ' (tú)' : ''}</span>
+                  <div key={c.usuario_id} className="bg-white border border-border rounded-full px-3 py-1.5 flex items-center gap-1.5 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">{c.nombre[0]}</div>
+                    <span className={c.usuario_id === usuarioId ? 'font-medium text-sm' : 'text-muted-foreground text-sm'}>{c.nombre}{c.usuario_id === usuarioId ? ' (tú)' : ''}</span>
                   </div>
                 ))}
               </div>
@@ -308,25 +307,25 @@ function MesaInner() {
             {llamarExito ? (
               <div className="text-center space-y-3 py-4">
                 <p className="text-green-600 font-medium">¡Aviso enviado!</p>
-                <p className="text-xs text-[#888]">El mesero irá a la mesa en un momento</p>
+                <p className="text-xs text-muted-foreground">El mesero irá a la mesa en un momento</p>
                 <div className="flex gap-2 pt-2">
-                  <button onClick={() => { setLlamarExito(false); setLlamarMensaje('') }} className="flex-1 h-10 text-sm border border-[#e5ddd2] text-[#888] rounded-md hover:bg-[#faf6f2]">Enviar otro</button>
-                  <button onClick={() => setShowLlamar(false)} className="flex-1 h-10 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md">Cerrar</button>
+                  <Button variant="outline" className="flex-1" onClick={() => { setLlamarExito(false); setLlamarMensaje('') }}>Enviar otro</Button>
+                  <Button className="flex-1" onClick={() => setShowLlamar(false)}>Cerrar</Button>
                 </div>
               </div>
             ) : (
               <>
                 <div className="flex gap-2 flex-wrap">
                   {['Cuenta por favor', 'Más servilletas', 'Más limones', 'Salsa extra', 'Ayuda'].map(p => (
-                    <button key={p} onClick={() => setLlamarMensaje(p)}
-                      className={`text-xs px-3 py-1.5 rounded-full border transition ${llamarMensaje === p ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-[#888] border-[#e5ddd2] hover:border-[#888]'}`}>{p}</button>
+                    <Button key={p} variant={llamarMensaje === p ? 'default' : 'outline'} size="xs"
+                      onClick={() => setLlamarMensaje(p)} className={llamarMensaje !== p ? 'bg-white' : ''}>{p}</Button>
                   ))}
                 </div>
                 <textarea placeholder="O escribe tu mensaje..." value={llamarMensaje} onChange={e => setLlamarMensaje(e.target.value)} rows={3}
-                  className="w-full border border-[#e5ddd2] rounded-md p-3 text-sm outline-none focus:border-[#888] resize-none bg-white" />
+                  className="w-full border border-border rounded-md p-3 text-sm outline-none focus:border-muted-foreground resize-none bg-white" />
                 <div className="flex gap-2">
-                  <button onClick={() => setShowLlamar(false)} className="flex-1 h-10 text-sm border border-[#e5ddd2] text-[#888] rounded-md hover:bg-[#faf6f2]">Cancelar</button>
-                  <button onClick={async () => {
+                  <Button variant="outline" className="flex-1" onClick={() => setShowLlamar(false)}>Cancelar</Button>
+                  <Button className="flex-1" disabled={!llamarMensaje.trim() || llamarEnviando} onClick={async () => {
                     if (!llamarMensaje.trim()) return; setLlamarEnviando(true); setError('')
                     try {
                       const esCuenta = llamarMensaje.trim() === 'Cuenta por favor'
@@ -334,8 +333,7 @@ function MesaInner() {
                       setLlamarExito(true)
                       if (esCuenta) setCuentaSolicitada(true)
                     } catch (e: any) { setError(e.message || 'Error de conexión') } finally { setLlamarEnviando(false) }
-                  }} disabled={!llamarMensaje.trim() || llamarEnviando}
-                    className="flex-1 h-10 text-sm bg-[#111] hover:bg-[#000] disabled:bg-[#e5ddd2] disabled:text-[#aaa] text-white rounded-md">{llamarEnviando ? 'Enviando...' : 'Enviar'}</button>
+                  }}>{llamarEnviando ? 'Enviando...' : 'Enviar'}</Button>
                 </div>
                 {error && <p className="text-xs text-red-500 text-center">{error}</p>}
               </>
@@ -347,53 +345,51 @@ function MesaInner() {
       {/* sheet de perfil */}
       {showPerfil && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-end justify-center" onClick={() => setShowPerfil(false)}>
-          <div className="bg-[#faf6f2] w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-[#faf6f2] border-b border-[#e5ddd2] px-4 py-3 flex items-center justify-between z-10">
+          <div className="bg-background w-full max-w-lg rounded-t-xl max-h-screen overflow-y-auto shadow-xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-background border-b border-border px-4 py-3 flex items-center justify-between z-10">
               <span className="font-semibold text-sm">Mi perfil</span>
-              <button onClick={() => setShowPerfil(false)} className="w-7 h-7 rounded-full bg-white border border-[#e5ddd2] flex items-center justify-center text-sm hover:bg-[#faf6f2] transition-colors"><X className="w-3.5 h-3.5" /></button>
+              <Button variant="outline" size="icon-xs" onClick={() => setShowPerfil(false)}><X className="w-3.5 h-3.5" /></Button>
             </div>
             <div className="p-5 space-y-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-[#e5ddd2]">
-                <div className="w-12 h-12 rounded-full bg-[#111] text-white flex items-center justify-center text-lg font-medium shrink-0">
+              <div className="flex items-center gap-3 pb-4 border-b border-border">
+                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-medium shrink-0">
                   {usuarioNombre[0]}
                 </div>
                 <div>
                   <p className="text-base font-medium">{usuarioNombre}</p>
-                  <p className="text-xs text-[#888]">{currentUser.celular || ''}</p>
+                  <p className="text-xs text-muted-foreground">{currentUser.celular || ''}</p>
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Nombre</label>
+                <label className="text-xs text-muted-foreground font-medium">Nombre</label>
                 <Input value={editNombre} onChange={e => setEditNombre(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+                  className="h-10 text-sm bg-white border-border" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Fecha de nacimiento</label>
+                <label className="text-xs text-muted-foreground font-medium">Fecha de nacimiento</label>
                 <Input type="date" value={editFecha} onChange={e => setEditFecha(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+                  className="h-10 text-sm bg-white border-border" />
               </div>
-              <Separator className="bg-[#e5ddd2]" />
-              <p className="text-xs font-medium text-[#888] uppercase tracking-wider">Cambiar contraseña</p>
+              <Separator className="bg-border" />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Cambiar contraseña</p>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Contraseña actual</label>
+                <label className="text-xs text-muted-foreground font-medium">Contraseña actual</label>
                 <Input type="password" value={passwordActual} onChange={e => setPasswordActual(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+                  className="h-10 text-sm bg-white border-border" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Nueva contraseña</label>
+                <label className="text-xs text-muted-foreground font-medium">Nueva contraseña</label>
                 <Input type="password" placeholder="Mínimo 6 caracteres" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]" />
+                  className="h-10 text-sm bg-white border-border" />
               </div>
               {perfilMsg && <p className="text-green-600 text-xs bg-green-50 border border-green-100 rounded-md px-3 py-2">{perfilMsg}</p>}
               {perfilError && <p className="text-red-500 text-xs bg-red-50 border border-red-100 rounded-md px-3 py-2">{perfilError}</p>}
-              <button onClick={guardarPerfil}
-                className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] text-white rounded-md font-medium">
+              <Button className="w-full h-11" onClick={guardarPerfil}>
                 Guardar cambios
-              </button>
-              <button onClick={() => { clearAppData(); navigate('/login') }}
-                className="w-full h-10 text-sm border border-[#e5ddd2] text-[#888] hover:text-red-500 hover:border-red-200 rounded-md flex items-center justify-center gap-2 transition">
+              </Button>
+              <Button variant="outline" className="w-full h-10 text-muted-foreground hover:text-red-500 hover:border-red-200" onClick={() => { clearAppData(); navigate('/login') }}>
                 <LogOut className="w-3.5 h-3.5" /> Cerrar sesión
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -409,21 +405,20 @@ function MesaInner() {
                   <Landmark className="w-5 h-5 text-blue-500" />
                 </div>
                 <h3 className="font-bold text-lg">Depósito en revisión</h3>
-                <p className="text-xs text-[#888]">Estamos revisando tu depósito. El encargado lo confirmará pronto.</p>
+                <p className="text-xs text-muted-foreground">Estamos revisando tu depósito. El encargado lo confirmará pronto.</p>
               </>
             ) : (
               <>
                 <div className="w-12 h-12 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center mx-auto">
-                  <span className="text-xl">🟡</span>
+                  <Wallet className="w-5 h-5 text-amber-500" />
                 </div>
                 <h3 className="font-bold text-lg">Esperando al mesero</h3>
-                <p className="text-xs text-[#888]">Avisamos al mesero. Te cobrará en la mesa en un momento.</p>
+                <p className="text-xs text-muted-foreground">Avisamos al mesero. Te cobrará en la mesa en un momento.</p>
               </>
             )}
-            <button onClick={() => setPagoSolicitado(null)}
-              className="w-full h-10 text-sm border border-[#e5ddd2] text-[#888] hover:text-[#111] rounded-md transition">
+            <Button variant="outline" className="w-full" onClick={() => setPagoSolicitado(null)}>
               Seguir pidiendo
-            </button>
+            </Button>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import { Button } from '../components/ui/button'
 import { useCart } from '../stores/CartContext'
 import { api, getCurrentUser } from '../services/api'
 
@@ -50,16 +51,16 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
     return (
       <div className="text-center py-16 space-y-3">
         <p className="text-2xl font-bold">Pedido enviado</p>
-        <p className="text-sm text-[#888]">#{success}</p>
-        <p className="text-xs text-[#aaa] animate-pulse">redirigiendo...</p>
+        <p className="text-sm text-muted-foreground">#{success}</p>
+        <p className="text-xs text-muted-foreground/70 animate-pulse">redirigiendo...</p>
       </div>
     )
   }
 
   if (items.length === 0) return (
     <div className="text-center py-12 space-y-4">
-      <p className="text-[#888] text-sm">No hay items en el carrito</p>
-      <button onClick={() => props?.onClose?.()} className="bg-[#111] hover:bg-[#000] text-white px-6 py-2 rounded-md text-sm">Ver menú</button>
+      <p className="text-muted-foreground text-sm">No hay items en el carrito</p>
+      <Button onClick={() => props?.onClose?.()}>Ver menú</Button>
     </div>
   )
 
@@ -67,12 +68,12 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
     <div className="space-y-4">
       <div className="space-y-2">
         {itemsPorComensal.map(grupo => (
-          <div key={grupo.usuarioId} className="bg-white border border-[#e5ddd2] rounded-lg overflow-hidden">
-            <div className="flex items-center gap-2 px-3 py-2 bg-[#faf6f2] border-b border-[#e5ddd2]">
-              <span className="w-5 h-5 rounded-full bg-[#111] text-white flex items-center justify-center text-[9px] font-bold shrink-0">
+          <div key={grupo.usuarioId} className="bg-white border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2 bg-background border-b border-border">
+              <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] font-bold shrink-0">
                 {grupo.usuarioNombre[0]}
               </span>
-              <span className="text-[11px] font-medium text-[#888]">{grupo.usuarioId === usuarioId && props?.usuarioNombre ? props.usuarioNombre : grupo.usuarioNombre}</span>
+              <span className="text-[11px] font-medium text-muted-foreground">{grupo.usuarioId === usuarioId && props?.usuarioNombre ? props.usuarioNombre : grupo.usuarioNombre}</span>
             </div>
             {grupo.items.map((item, i) => {
               const idx = items.findIndex(it =>
@@ -81,20 +82,20 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
               )
               const itemTotal = (item.precioUnitario + item.modificadores.reduce((s, m) => s + m.precio, 0)) * item.cantidad
               return (
-                <div key={i} className={`px-3 py-2.5 flex items-center gap-3 ${i > 0 ? 'border-t border-[#e5ddd2]' : ''}`}>
+                <div key={i} className={`px-3 py-2.5 flex items-center gap-3 ${i > 0 ? 'border-t border-border' : ''}`}>
                   {grupo.usuarioId === usuarioId ? (
-                    <div className="flex items-center border border-[#e5ddd2] rounded overflow-hidden shrink-0">
-                      <button onClick={() => updateCantidad(idx, -1)} className="w-6 h-6 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">−</button>
+                    <div className="flex items-center border border-border rounded shrink-0">
+                      <Button variant="ghost" size="icon-xs" className="rounded-none" onClick={() => updateCantidad(idx, -1)}>−</Button>
                       <span className="w-7 text-xs font-semibold text-center">{item.cantidad}</span>
-                      <button onClick={() => updateCantidad(idx, 1)} className="w-6 h-6 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">+</button>
+                      <Button variant="ghost" size="icon-xs" className="rounded-none" onClick={() => updateCantidad(idx, 1)}>+</Button>
                     </div>
                   ) : (
-                    <span className="text-xs font-semibold text-[#888] w-[55px] text-center shrink-0">{item.cantidad}x</span>
+                    <span className="text-xs font-semibold text-muted-foreground w-[55px] text-center shrink-0">{item.cantidad}x</span>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.nombre}</p>
                     {(item.modificadores.length > 0 || item.notas) && (
-                      <p className="text-[#aaa] text-[11px] truncate">
+                      <p className="text-muted-foreground/70 text-[11px] truncate">
                         {item.modificadores.map(m => m.nombre).join(', ')}{item.notas ? ` · ${item.notas}` : ''}
                       </p>
                     )}
@@ -102,7 +103,7 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-sm font-semibold">${itemTotal.toFixed(2)}</span>
                     {grupo.usuarioId === usuarioId && (
-                      <button onClick={() => removeItem(idx)} className="text-[#ccc] hover:text-red-400 transition-colors text-xs">✕</button>
+                      <Button variant="ghost" size="icon-xs" className="text-muted-foreground/50 hover:text-red-400" onClick={() => removeItem(idx)}>✕</Button>
                     )}
                   </div>
                 </div>
@@ -112,29 +113,28 @@ export default function PrePedido(props?: { restauranteId?: string; mesaId?: str
         ))}
       </div>
 
-      <div className="border-t border-[#e5ddd2] pt-3 space-y-1.5">
+      <div className="border-t border-border pt-3 space-y-1.5">
         <div className="flex justify-between text-sm">
-          <span className="text-[#888]">Subtotal</span>
+          <span className="text-muted-foreground">Subtotal</span>
           <span className="font-medium">${subtotal.toFixed(2)}</span>
         </div>
         {!ivaIncluido && (
           <div className="flex justify-between text-sm">
-            <span className="text-[#888]">IVA ({ivaPct}%)</span>
+            <span className="text-muted-foreground">IVA ({ivaPct}%)</span>
             <span className="font-medium">${ivaMonto.toFixed(2)}</span>
           </div>
         )}
-        <div className="flex justify-between text-base font-bold border-t border-[#e5ddd2] pt-3">
-          <span>Total{ivaIncluido ? <span className="text-[10px] text-[#aaa] font-normal ml-1">(IVA incl.)</span> : ''}</span>
+        <div className="flex justify-between text-base font-bold border-t border-border pt-3">
+          <span>Total{ivaIncluido ? <span className="text-[10px] text-muted-foreground/70 font-normal ml-1">(IVA incl.)</span> : ''}</span>
           <span>${total.toFixed(2)}</span>
         </div>
       </div>
 
       {error && <p className="text-red-500 text-xs bg-red-50 border border-red-100 rounded-md px-3 py-2">{error}</p>}
 
-      <button onClick={handleConfirm} disabled={submitting}
-        className="w-full h-12 text-sm bg-[#111] hover:bg-[#000] disabled:bg-[#e5ddd2] disabled:text-[#aaa] text-white rounded-lg font-semibold transition">
+      <Button className="w-full h-12" onClick={handleConfirm} disabled={submitting}>
         {submitting ? 'Enviando…' : `Confirmar pedido — $${total.toFixed(2)}`}
-      </button>
+      </Button>
     </div>
   )
 }

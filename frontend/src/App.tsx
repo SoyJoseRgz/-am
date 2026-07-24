@@ -97,12 +97,12 @@ function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#f0e8de_0%,_transparent_70%)]" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* header con logo */}
-        <div className="w-full border-b border-[#e5ddd2] bg-white/80 backdrop-blur-sm">
+        <div className="w-full border-b border-border bg-white/80 backdrop-blur-sm">
           <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
             <h1 className="text-lg font-light tracking-tight">miResto</h1>
           </div>
@@ -112,11 +112,11 @@ function Home() {
         <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 pb-24">
           <div className="w-full max-w-sm flex flex-col items-center gap-6">
             <div className="text-center">
-              <p className="text-xs text-[#888] tracking-[0.2em] uppercase">Menú digital para tu restaurante</p>
+              <p className="text-xs text-muted-foreground tracking-[0.2em] uppercase">Menú digital para tu restaurante</p>
             </div>
-            <Card className="w-full shadow-md border border-[#e5ddd2]">
+            <Card className="w-full shadow-md border border-border">
               <CardContent className="pt-8 pb-8 flex flex-col items-center gap-6">
-                <p className="text-sm text-[#888] text-center">Escanea el código QR de tu mesa</p>
+                <p className="text-sm text-muted-foreground text-center">Escanea el código QR de tu mesa</p>
                 <div className="flex justify-center w-full">
                   <QRScanner />
                 </div>
@@ -127,90 +127,91 @@ function Home() {
       </div>
 
       {/* bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-[#e5ddd2] bg-white/90 backdrop-blur-sm z-20">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-white/90 backdrop-blur-sm z-20">
         <div className="max-w-lg mx-auto flex">
-          <button className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[#111]">
+          <Button variant="ghost" size="sm" className="flex-1 flex flex-col items-center gap-0.5 py-2.5 h-auto text-foreground rounded-none">
             <QrCode className="w-5 h-5" />
             <span className="text-[10px] font-medium">Inicio</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost" size="sm"
             onClick={() => setPerfilOpen(true)}
-            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-[#888] hover:text-[#111] transition-colors"
+            className="flex-1 flex flex-col items-center gap-0.5 py-2.5 h-auto text-muted-foreground hover:text-foreground rounded-none"
           >
             <User className="w-5 h-5" />
             <span className="text-[10px] font-medium">Perfil</span>
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* sheet de perfil */}
       <Sheet open={perfilOpen} onOpenChange={setPerfilOpen}>
-        <SheetContent side="left" className="bg-[#faf6f2] border-r border-[#e5ddd2] p-0">
+        <SheetContent side="left" className="bg-background border-r border-border p-0">
           <div className="h-full flex flex-col">
-            <div className="px-5 pt-6 pb-4 border-b border-[#e5ddd2]">
+            <div className="px-5 pt-6 pb-4 border-b border-border">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#111] text-white flex items-center justify-center text-lg font-medium shrink-0">
+                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-medium shrink-0">
                   {(user?.nombre || '?')[0].toUpperCase()}
                 </div>
                 <div>
                   <p className="text-base font-medium">{user?.nombre || 'Comensal'}</p>
-                  <p className="text-xs text-[#888]">{user?.celular || ''}</p>
+                  <p className="text-xs text-muted-foreground">{user?.celular || ''}</p>
                 </div>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Nombre</label>
+                <label className="text-xs text-muted-foreground font-medium">Nombre</label>
                 <Input
                   value={editNombre}
                   onChange={e => setEditNombre(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Fecha de nacimiento</label>
+                <label className="text-xs text-muted-foreground font-medium">Fecha de nacimiento</label>
                 <Input
                   type="date"
                   value={editFecha}
                   onChange={e => setEditFecha(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
-              <Separator className="bg-[#e5ddd2]" />
-              <p className="text-xs font-medium text-[#888] uppercase tracking-wider">Cambiar contraseña</p>
+              <Separator className="bg-border" />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Cambiar contraseña</p>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Contraseña actual</label>
+                <label className="text-xs text-muted-foreground font-medium">Contraseña actual</label>
                 <Input
                   type="password"
                   value={passwordActual}
                   onChange={e => setPasswordActual(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs text-[#888] font-medium">Nueva contraseña</label>
+                <label className="text-xs text-muted-foreground font-medium">Nueva contraseña</label>
                 <Input
                   type="password"
                   placeholder="Mínimo 6 caracteres"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
               {perfilMsg && <p className="text-green-600 text-xs bg-green-50 border border-green-100 rounded-md px-3 py-2">{perfilMsg}</p>}
               {perfilError && <p className="text-red-500 text-xs bg-red-50 border border-red-100 rounded-md px-3 py-2">{perfilError}</p>}
               <Button
                 onClick={guardarPerfil}
-                className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] text-white"
+                className="w-full h-11 text-sm"
               >
                 Guardar cambios
               </Button>
             </div>
-            <div className="px-5 py-4 border-t border-[#e5ddd2]">
+            <div className="px-5 py-4 border-t border-border">
               <Button
                 variant="outline"
                 onClick={() => { clearAppData(); navigate('/login') }}
-                className="w-full h-10 text-sm border-[#e5ddd2] text-[#888] hover:text-red-500 hover:border-red-200"
+                className="w-full h-10 text-sm border-border text-muted-foreground hover:text-red-500 hover:border-red-200"
               >
                 Cerrar sesión
               </Button>
@@ -285,41 +286,41 @@ function AuthScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf6f2] text-[#111] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#f0e8de_0%,_transparent_70%)]" />
 
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center gap-8">
         <div className="text-center">
-          <h1 className="text-4xl sm:text-5xl font-light tracking-tight text-[#111] mb-1">miResto</h1>
-          <p className="text-sm text-[#888] tracking-[0.2em] uppercase">Menú digital para tu restaurante</p>
+          <h1 className="text-4xl sm:text-5xl font-light tracking-tight text-foreground mb-1">miResto</h1>
+          <p className="text-sm text-muted-foreground tracking-[0.2em] uppercase">Menú digital para tu restaurante</p>
         </div>
 
-        <Card className="w-full shadow-md border border-[#e5ddd2]">
-          <div className="flex border-b border-[#e5ddd2]">
+        <Card className="w-full shadow-md border border-border">
+          <div className="flex border-b border-border">
             <button
               onClick={() => switchMode()}
               className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
                 mode === 'login'
-                  ? 'text-[#111]'
-                  : 'text-[#bbb] hover:text-[#888]'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground'
               }`}
             >
               Iniciar sesión
               {mode === 'login' && (
-                <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#111]" />
+                <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary" />
               )}
             </button>
             <button
               onClick={() => switchMode()}
               className={`flex-1 py-3 text-sm font-medium transition-colors relative ${
                 mode === 'register'
-                  ? 'text-[#111]'
-                  : 'text-[#bbb] hover:text-[#888]'
+                  ? 'text-foreground'
+                  : 'text-muted-foreground/60 hover:text-muted-foreground'
               }`}
             >
               Crear cuenta
               {mode === 'register' && (
-                <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#111]" />
+                <span className="absolute bottom-0 left-4 right-4 h-0.5 bg-primary" />
               )}
             </button>
           </div>
@@ -328,34 +329,34 @@ function AuthScreen() {
             <form className="space-y-3" onSubmit={handleSubmit}>
               {mode === 'register' && (
                 <div className="space-y-1">
-                  <label className="text-xs text-[#888] font-medium">Nombre</label>
+                <label className="text-xs text-muted-foreground font-medium">Nombre</label>
                   <Input
                     type="text"
                     placeholder="Tu nombre"
                     value={nombre}
                     onChange={e => setNombre(e.target.value)}
-                    className="h-10 text-sm bg-white border-[#e5ddd2]"
+                    className="h-10 text-sm bg-white border-border"
                   />
                 </div>
               )}
               <div className="space-y-1">
-                <label className="text-xs text-[#888] font-medium">Celular</label>
+                <label className="text-xs text-muted-foreground font-medium">Celular</label>
                 <Input
                   type="tel"
                   placeholder="55 1234 5678"
                   value={celular}
                   onChange={e => setCelular(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-[#888] font-medium">Contraseña</label>
+                <label className="text-xs text-muted-foreground font-medium">Contraseña</label>
                 <Input
                   type="password"
                   placeholder={mode === 'register' ? 'Mínimo 6 caracteres' : '••••••••'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="h-10 text-sm bg-white border-[#e5ddd2]"
+                  className="h-10 text-sm bg-white border-border"
                 />
               </div>
               {error && (
@@ -364,7 +365,7 @@ function AuthScreen() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 text-sm bg-[#111] hover:bg-[#000] text-white"
+                className="w-full h-11 text-sm"
               >
                 {loading
                   ? (mode === 'login' ? 'Entrando…' : 'Creando cuenta…')
@@ -374,26 +375,26 @@ function AuthScreen() {
             </form>
 
             {mode === 'login' && (
-              <p className="text-xs text-[#aaa] text-center">
+              <p className="text-xs text-muted-foreground/70 text-center">
                 ¿No tienes cuenta?{' '}
-                <button onClick={switchMode} className="text-[#111] underline underline-offset-2 hover:no-underline font-medium">
+                <Button variant="link" onClick={switchMode} className="text-foreground underline underline-offset-2 font-medium p-0 h-auto">
                   Crear una
-                </button>
+                </Button>
               </p>
             )}
           </CardContent>
         </Card>
 
         {mode === 'register' && (
-          <p className="text-xs text-[#aaa] text-center max-w-xs leading-relaxed">
+          <p className="text-xs text-muted-foreground/70 text-center max-w-xs leading-relaxed">
             Al crear una cuenta aceptas nuestros{' '}
-            <a href="#" className="text-[#111] underline underline-offset-2 hover:no-underline">Términos</a>
+            <a href="#" className="text-foreground underline underline-offset-2 hover:no-underline">Términos</a>
             {' '}y{' '}
-            <a href="#" className="text-[#111] underline underline-offset-2 hover:no-underline">Política de privacidad</a>
+            <a href="#" className="text-foreground underline underline-offset-2 hover:no-underline">Política de privacidad</a>
           </p>
         )}
 
-        <Link to="/" className="text-xs text-[#aaa] hover:text-[#111] underline underline-offset-2">
+        <Link to="/" className="text-xs text-muted-foreground/70 hover:text-foreground underline underline-offset-2">
           ← Ya tengo cuenta
         </Link>
       </div>

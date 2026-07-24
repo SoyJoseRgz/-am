@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '../components/ui/button'
 import { api, getCurrentUser } from '../services/api'
 
 export default function ForcePasswordChange() {
@@ -30,17 +31,17 @@ export default function ForcePasswordChange() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <h2 className="text-2xl font-bold text-center">Cambiar contraseña</h2>
-        <p className="text-gray-500 text-sm text-center">Es la primera vez que inicias sesión. Cambia tu contraseña.</p>
+        <p className="text-muted-foreground text-sm text-center">Es la primera vez que inicias sesión. Cambia tu contraseña.</p>
         <input type="password" placeholder="Nueva contraseña (mín. 6 caracteres)" value={newPassword}
           onChange={e => setNewPassword(e.target.value)}
-          className="w-full p-3 rounded-md bg-gray-50 border border-gray-200 focus:border-gray-400 outline-none" />
+          className="w-full p-3 rounded-md bg-muted border border-border focus:border-muted-foreground outline-none" />
         {error && <p className="text-red-500 text-sm">{error}</p>}
-        <button disabled={loading} className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 p-3 rounded-md font-semibold text-white">
+        <Button type="submit" disabled={loading} className="w-full p-3 h-auto font-semibold">
           {loading ? 'Cambiando...' : 'Cambiar contraseña'}
-        </button>
+        </Button>
       </form>
     </div>
   )

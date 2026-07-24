@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { Button } from '../components/ui/button'
 import { useCart } from '../stores/CartContext'
 import { api } from '../services/api'
 
@@ -142,18 +143,18 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
   return (
     <div className="pb-20">
       {/* search */}
-      <label className="sticky top-0 z-10 block bg-[#faf6f2] pt-2 pb-3">
+      <label className="sticky top-0 z-10 block bg-background pt-2 pb-3">
         <div className="relative">
           <input
-            className="w-full h-11 bg-white border border-[#e5ddd2] rounded-md px-4 text-sm outline-none focus:border-[#111] placeholder:text-[#bbb] pr-8"
+            className="w-full h-11 bg-white border border-border rounded-md px-4 text-sm outline-none focus:border-foreground placeholder:text-muted-foreground/60 pr-8"
             placeholder="Buscar platillo..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
           {search && (
-            <button onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-[#bbb] hover:text-[#111] transition-colors text-xs">
+            <Button variant="ghost" size="icon-xs" onClick={() => setSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2">
               ✕
-            </button>
+            </Button>
           )}
         </div>
       </label>
@@ -162,12 +163,11 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
       {!search && (
         <div ref={tabsRef} className="flex gap-2 overflow-x-auto pb-3 snap-x scrollbar-none">
           {cats.map((c, i) => (
-            <button key={c.id} onClick={() => { setActiveCat(i); setSel(null); gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
-              className={`snap-start shrink-0 h-10 px-5 rounded-full text-sm font-medium transition whitespace-nowrap ${
-                i === activeCat ? 'bg-[#111] text-white' : 'bg-white border border-[#e5ddd2] text-[#888] hover:text-[#111]'
-              }`}>
+            <Button key={c.id} variant={i === activeCat ? 'default' : 'outline'} size="lg"
+              className={`snap-start shrink-0 rounded-full whitespace-nowrap ${i === activeCat ? '' : 'bg-white'}`}
+              onClick={() => { setActiveCat(i); setSel(null); gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>
               {c.nombre}
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -177,71 +177,69 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
       {loadingMenu ? (
         <div className="grid grid-cols-2 gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-white border border-[#e5ddd2] rounded-md overflow-hidden animate-pulse">
-              <div className="w-full aspect-[4/3] bg-[#f0ebe3]" />
+            <div key={i} className="bg-white border border-border rounded-md overflow-hidden animate-pulse">
+              <div className="w-full aspect-[4/3] bg-muted" />
               <div className="p-2.5 space-y-2">
-                <div className="h-3 bg-[#f0ebe3] rounded w-3/4" />
-                <div className="h-2 bg-[#f0ebe3] rounded w-1/2" />
-                <div className="h-3 bg-[#f0ebe3] rounded w-1/4" />
+                <div className="h-3 bg-muted rounded w-3/4" />
+                <div className="h-2 bg-muted rounded w-1/2" />
+                <div className="h-3 bg-muted rounded w-1/4" />
               </div>
               <div className="px-2.5 pb-2.5">
-                <div className="h-8 bg-[#f0ebe3] rounded-md" />
+                <div className="h-8 bg-muted rounded-md" />
               </div>
             </div>
           ))}
         </div>
       ) : menuError ? (
         <div className="text-center py-10 col-span-2">
-          <p className="text-[#888] text-sm">{menuError}</p>
-          <button onClick={() => { setLoadingMenu(true); setMenuError(''); api<{ categorias: CategoriaMenu[] }>(`/api/restaurantes/${restauranteId}/menu`).then(d => { setCats(d.categorias); setLoadingMenu(false) }).catch(() => { setMenuError('Error al cargar el menú'); setLoadingMenu(false) }) }}
-            className="text-[11px] text-[#111] underline underline-offset-2 decoration-dotted hover:no-underline mt-2">reintentar</button>
+          <p className="text-muted-foreground text-sm">{menuError}</p>
+          <Button variant="link" size="xs" className="text-foreground underline underline-offset-2 decoration-dotted mt-2" onClick={() => { setLoadingMenu(true); setMenuError(''); api<{ categorias: CategoriaMenu[] }>(`/api/restaurantes/${restauranteId}/menu`).then(d => { setCats(d.categorias); setLoadingMenu(false) }).catch(() => { setMenuError('Error al cargar el menú'); setLoadingMenu(false) }) }}>
+            reintentar
+          </Button>
         </div>
       ) : (
       <div className="grid grid-cols-2 gap-2">
         {platillos.map(p => {
           const qty = cartQty(p.id)
           return (
-            <div key={p.id} className={`bg-white border border-[#e5ddd2] rounded-md flex flex-col overflow-hidden transition ${p.agotado ? 'opacity-40' : 'hover:border-[#ccc]'}`}>
+            <div key={p.id} className={`bg-white border border-border rounded-md flex flex-col overflow-hidden transition ${p.agotado ? 'opacity-40' : 'hover:border-muted-foreground/35'}`}>
               {/* photo */}
               <button onClick={() => openDetail(p)} className="w-full aspect-[4/3] overflow-hidden relative">
                 {p.foto_url && (
                   <img src={p.foto_url} alt={p.nombre} className="absolute inset-0 w-full h-full object-cover" loading="lazy"
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden') }} />
                 )}
-                <div className={`absolute inset-0 w-full h-full bg-[#faf6f2] flex items-center justify-center ${p.foto_url ? 'hidden' : ''}`}>
-                  <span className="text-[#e5ddd2] text-3xl font-bold">{p.nombre[0]}</span>
+                <div className={`absolute inset-0 w-full h-full bg-background flex items-center justify-center ${p.foto_url ? 'hidden' : ''}`}>
+                  <span className="text-border text-3xl font-bold">{p.nombre[0]}</span>
                 </div>
               </button>
 
               {/* info */}
               <button onClick={() => openDetail(p)} className="flex-1 text-left px-2.5 py-2 flex flex-col gap-0.5">
                 <p className="text-xs font-semibold leading-tight line-clamp-2">{p.nombre}</p>
-                {p.descripcion && <p className="text-[10px] text-[#888] line-clamp-1">{p.descripcion}</p>}
+                {p.descripcion && <p className="text-[10px] text-muted-foreground line-clamp-1">{p.descripcion}</p>}
                 <p className="text-xs font-bold mt-auto">${p.precio}</p>
               </button>
 
               {/* action */}
               <div className="px-2.5 pb-2.5">
                 {p.agotado ? (
-                  <span className="text-[9px] text-[#bbb] uppercase tracking-wider">agotado</span>
+                  <span className="text-[9px] text-muted-foreground/60 uppercase tracking-wider">agotado</span>
                 ) : qty > 0 ? (
-                  <div className="flex items-center border border-[#e5ddd2] rounded-md overflow-hidden w-fit">
-                    <button onClick={() => handleCartDecrement(p.id)}
-                      className="w-7 h-7 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">−</button>
+                  <div className="flex items-center border border-border rounded-md w-fit">
+                    <Button variant="ghost" size="icon-xs" className="rounded-none" onClick={() => handleCartDecrement(p.id)}>−</Button>
                     <span className="w-6 text-[11px] font-semibold text-center">{qty}</span>
-                    <button onClick={() => handleCartIncrement(p.id)}
-                      className="w-7 h-7 flex items-center justify-center text-sm leading-none hover:bg-[#faf6f2] transition-colors">+</button>
+                    <Button variant="ghost" size="icon-xs" className="rounded-none" onClick={() => handleCartIncrement(p.id)}>+</Button>
                   </div>
                 ) : (
-                  <button onClick={() => handleQuickAdd(p)}
-                    className="w-full h-8 bg-[#111] text-white rounded-md text-sm flex items-center justify-center hover:bg-[#000] transition-colors">+</button>
+                  <Button size="sm" className="w-full" onClick={() => handleQuickAdd(p)}>+</Button>
                 )}
               </div>
             </div>
           )
         })}
         {platillos.length === 0 && (
-          <p className="text-[#aaa] text-center py-8 text-sm col-span-2">Sin resultados</p>
+          <p className="text-muted-foreground/70 text-center py-8 text-sm col-span-2">Sin resultados</p>
         )}
       </div>
       )}
@@ -258,11 +256,11 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 className="font-bold text-lg">{sel.nombre}</h3>
-                  {sel.descripcion && <p className="text-sm text-[#888] mt-1 leading-relaxed">{sel.descripcion}</p>}
-                  {sel.tiempo_preparacion && <p className="text-[11px] text-[#aaa] mt-1">~{sel.tiempo_preparacion} min</p>}
+                  {sel.descripcion && <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{sel.descripcion}</p>}
+                  {sel.tiempo_preparacion && <p className="text-[11px] text-muted-foreground/70 mt-1">~{sel.tiempo_preparacion} min</p>}
                   <p className="text-sm font-bold mt-2">${sel.precio}</p>
                 </div>
-                <button onClick={() => setSel(null)} className="w-7 h-7 rounded-full bg-[#faf6f2] flex items-center justify-center text-sm hover:bg-[#e5ddd2] transition-colors shrink-0">✕</button>
+                <Button variant="ghost" size="icon-xs" className="bg-background hover:bg-border" onClick={() => setSel(null)}>✕</Button>
               </div>
 
               {sel.agotado ? (
@@ -271,13 +269,13 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
                 <>
                   {groupMods(sel.modificadores).map(g => (
                     <div key={g.nombre}>
-                      <p className="text-xs font-semibold text-[#888] uppercase tracking-wider mb-2">{g.nombre}</p>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{g.nombre}</p>
                       <div className="space-y-1">
                         {g.opciones.map(o => {
                           const checked = (selMods[g.nombre] || []).includes(o.id)
                           const isRadio = o.max_seleccion_grupo === 1
                           return (
-                            <label key={o.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition ${checked ? 'bg-[#111] text-white' : 'bg-[#faf6f2] hover:bg-[#e5ddd2]'}`}>
+                            <label key={o.id} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer text-sm transition ${checked ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-border'}`}>
                               <span className="flex-1">{o.nombre}</span>
                               {Number(o.precio) > 0 && <span className="text-xs opacity-70">+${o.precio}</span>}
                               <input type={isRadio ? 'radio' : 'checkbox'} name={isRadio ? `mod-${sel.id}-${g.nombre}` : undefined}
@@ -291,17 +289,15 @@ export default function MenuDigital({ restauranteId, usuarioId, usuarioNombre }:
                   ))}
 
                   <textarea placeholder="Nota para cocina..." value={nota} onChange={e => setNota(e.target.value)} rows={2}
-                    className="w-full text-sm border border-[#e5ddd2] rounded-lg p-3 outline-none focus:border-[#111] resize-none bg-[#faf6f2]" />
+                    className="w-full text-sm border border-border rounded-lg p-3 outline-none focus:border-foreground resize-none bg-background" />
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center border border-[#e5ddd2] rounded-lg overflow-hidden">
-                      <button onClick={() => setCant(c => Math.max(1, c - 1))} className="w-10 h-10 flex items-center justify-center text-base hover:bg-[#faf6f2]">−</button>
+                    <div className="flex items-center border border-border rounded-lg">
+                      <Button variant="ghost" size="icon-sm" className="rounded-none" onClick={() => setCant(c => Math.max(1, c - 1))}>−</Button>
                       <span className="w-9 text-sm font-semibold text-center">{cant}</span>
-                      <button onClick={() => setCant(c => Math.min(99, c + 1))} className="w-10 h-10 flex items-center justify-center text-base hover:bg-[#faf6f2]">+</button>
+                      <Button variant="ghost" size="icon-sm" className="rounded-none" onClick={() => setCant(c => Math.min(99, c + 1))}>+</Button>
                     </div>
-                    <button onClick={() => handleAdd(sel)} className="flex-1 h-10 bg-[#111] hover:bg-[#000] text-white rounded-lg font-semibold text-sm transition">
-                      Agregar ${totalPrecio(sel).toFixed(2)}
-                    </button>
+                    <Button className="flex-1 h-10" onClick={() => handleAdd(sel)}>Agregar ${totalPrecio(sel).toFixed(2)}</Button>
                   </div>
                 </>
               )}

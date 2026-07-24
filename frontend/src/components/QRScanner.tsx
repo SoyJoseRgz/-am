@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '../components/ui/button'
 import { Html5Qrcode } from 'html5-qrcode'
 
 const QR_SCANNER_ID = 'qr-scanner-element'
@@ -54,19 +55,21 @@ export default function QRScanner() {
   return (
     <>
       {!scanning ? (
-        <button onClick={() => setScanning(true)} className="bg-black hover:bg-gray-800 px-8 py-3 rounded-md font-semibold transition text-lg text-white">
+        <Button onClick={() => setScanning(true)} size="lg" className="px-8">
           Escanear QR
-        </button>
+        </Button>
       ) : (
         <div className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center p-4">
           <div id={QR_SCANNER_ID} className="w-full max-w-[400px]" style={{ minHeight: 300 }} />
           {error && <p className="text-red-400 text-sm mt-4 text-center">{error}</p>}
-          <button
+          <Button
+            variant="outline"
+            size="lg"
             onClick={() => setScanning(false)}
-            className="mt-6 bg-white text-black px-6 py-2 rounded-md font-semibold"
+            className="mt-6 px-6"
           >
             Cancelar
-          </button>
+          </Button>
         </div>
       )}
     </>

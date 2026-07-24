@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from '../../components/ui/button'
 import { api } from '../../services/api'
 
 interface Categoria {
@@ -40,30 +41,30 @@ function CatForm({ editing, onDone }: { editing: Categoria | null; onDone: () =>
   return (
     <div className="flex gap-2 items-end flex-wrap">
       <div className="flex-1 min-w-[160px]">
-        <input className="w-full bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
+        <input className="w-full bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} />
       </div>
       <div className="relative">
-        <button type="button" onClick={() => setShowPicker(!showPicker)}
-          className="bg-gray-50 border border-gray-200 rounded-md px-2 py-1.5 text-lg flex items-center gap-1 hover:bg-gray-100 h-[34px]">
-          {icono} <span className="text-xs text-gray-400">▼</span>
-        </button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setShowPicker(!showPicker)}
+          className="text-lg flex items-center gap-1 h-[34px]">
+          {icono} <span className="text-xs text-muted-foreground/60">▼</span>
+        </Button>
         {showPicker && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setShowPicker(false)} />
-            <div className="absolute top-full mt-1 left-0 z-20 bg-white border border-gray-200 rounded-md p-2 grid grid-cols-6 gap-1 shadow-lg w-[260px]">
+            <div className="absolute top-full mt-1 left-0 z-20 bg-white border border-border rounded-md p-2 grid grid-cols-6 gap-1 shadow-lg w-[260px]">
               {emojis.map(e => (
-                <button key={e} type="button"
+                <Button key={e} type="button" variant="ghost" size="sm"
                   onClick={() => { setIcono(e); setShowPicker(false) }}
-                  className={`text-lg p-1 rounded hover:bg-gray-100 ${icono === e ? 'bg-gray-200 ring-1 ring-black' : ''}`}>
+                  className={`text-lg p-1 h-auto w-auto rounded ${icono === e ? 'bg-muted-foreground/15 ring-1 ring-primary' : ''}`}>
                   {e}
-                </button>
+                </Button>
               ))}
             </div>
           </>
         )}
       </div>
-      <button className="bg-black hover:bg-gray-800 px-4 py-1.5 rounded-md text-sm text-white h-[34px]" onClick={save}>{editing ? 'Guardar' : 'Crear'}</button>
-      {editing && <button className="text-gray-400 hover:text-black text-sm h-[34px]" onClick={onDone}>Cancelar</button>}
+      <Button size="sm" onClick={save}>{editing ? 'Guardar' : 'Crear'}</Button>
+      {editing && <Button variant="ghost" size="sm" onClick={onDone}>Cancelar</Button>}
       {error && <p className="text-red-500 text-xs w-full">{error}</p>}
     </div>
   )
@@ -252,17 +253,17 @@ export default function AdminMenu() {
     <div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl font-bold">Menú</h2>
-        {!newCat && <button className="bg-black hover:bg-gray-800 px-4 py-2 rounded-md text-sm text-white" onClick={() => setNewCat(true)}>+ Nueva categoría</button>}
+        {!newCat && <Button onClick={() => setNewCat(true)}>+ Nueva categoría</Button>}
       </div>
       {error && <p className="text-red-500 mb-2 text-sm">{error}</p>}
 
       {newCat && (
-        <div className="bg-white border border-gray-200 rounded-md p-3 mb-4">
+        <div className="bg-white border border-border rounded-md p-3 mb-4">
           <CatForm editing={null} onDone={() => { setNewCat(false); load() }} />
         </div>
       )}
 
-      <input className="w-full bg-gray-50 border border-gray-200 rounded-md px-4 py-2 mb-4 text-sm"
+      <input className="w-full bg-muted border border-border rounded-md px-4 py-2 mb-4 text-sm"
         placeholder="Buscar platillo o categoría..." value={search} onChange={e => setSearch(e.target.value)} />
 
       <div className="space-y-2">
@@ -270,26 +271,26 @@ export default function AdminMenu() {
           const isExpanded = search.trim() ? expandedSearch.has(c.id) : expanded.has(c.id)
           const platsCat = q ? plats.filter(p => p.categoria_id === c.id && (c.nombre.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q))) : plats.filter(p => p.categoria_id === c.id)
           return (
-          <div key={c.id} className="bg-white border border-gray-200 rounded-md overflow-hidden">
-            <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition"
+          <div key={c.id} className="bg-white border border-border rounded-md overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted transition"
               onClick={() => toggleExpand(c.id)} style={{ cursor: 'pointer' }}>
-              <span className="text-gray-400 text-sm">{isExpanded ? '▼' : '▶'}</span>
+              <span className="text-muted-foreground/60 text-sm">{isExpanded ? '▼' : '▶'}</span>
               <span className="text-xl">{c.icono || '🍽️'}</span>
               <span className="flex-1 font-medium">{c.nombre}</span>
-              <span className="text-xs text-gray-400">({platsCat.length})</span>
+              <span className="text-xs text-muted-foreground/60">({platsCat.length})</span>
             </div>
 
             {isExpanded && (
-              <div className="border-t border-gray-100 bg-gray-50/50">
-                <div className="flex gap-2 px-4 py-2 border-b border-gray-100 bg-gray-100/50">
-                  <button className="text-gray-500 hover:text-black text-xs border border-gray-200 bg-white rounded px-2 py-1" onClick={() => moveUp(i)} disabled={i === 0}>↑ Subir</button>
-                  <button className="text-gray-500 hover:text-black text-xs border border-gray-200 bg-white rounded px-2 py-1" onClick={() => moveDown(i)} disabled={i === cats.length - 1}>↓ Bajar</button>
-                  <button className="text-gray-500 hover:text-black text-xs border border-gray-200 bg-white rounded px-2 py-1" onClick={() => setEditingCat(c.id)}>Editar nombre</button>
-                  <button className="text-red-400 hover:text-red-600 text-xs border border-gray-200 bg-white rounded px-2 py-1" onClick={() => delCat(c.id)}>✕ Eliminar</button>
+              <div className="border-t border-muted bg-muted/50">
+                <div className="flex gap-2 px-4 py-2 border-b border-muted bg-secondary/50">
+                  <Button variant="outline" size="xs" onClick={() => moveUp(i)} disabled={i === 0}>↑ Subir</Button>
+                  <Button variant="outline" size="xs" onClick={() => moveDown(i)} disabled={i === cats.length - 1}>↓ Bajar</Button>
+                  <Button variant="outline" size="xs" onClick={() => setEditingCat(c.id)}>Editar nombre</Button>
+                  <Button variant="outline" size="xs" className="text-red-400 hover:text-red-600 border-border" onClick={() => delCat(c.id)}>✕ Eliminar</Button>
                 </div>
 
                 {editingCat === c.id && (
-                  <div className="px-4 py-2 border-b border-gray-100 bg-white">
+                  <div className="px-4 py-2 border-b border-muted bg-white">
                     <CatForm editing={c} onDone={() => { setEditingCat(null); load() }} />
                   </div>
                 )}
@@ -297,71 +298,71 @@ export default function AdminMenu() {
                 {platsCat.map(p => (
                   <div key={p.id}>
                     {editPlatId === p.id ? (
-                      <div className="p-4 border-b border-gray-200 bg-white">
+                      <div className="p-4 border-b border-border bg-white">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                          <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={form.nombre}
+                          <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={form.nombre}
                             onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
-                          <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Precio" type="number" step="0.01" value={form.precio}
+                          <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Precio" type="number" step="0.01" value={form.precio}
                             onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
-                          <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Tiempo prep. (min)" type="number" value={form.tiempo_preparacion}
+                          <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Tiempo prep. (min)" type="number" value={form.tiempo_preparacion}
                             onChange={e => setForm(f => ({ ...f, tiempo_preparacion: Number(e.target.value) }))} />
                         </div>
-                        <textarea className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm w-full" placeholder="Descripción" rows={2} value={form.descripcion}
+                        <textarea className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm w-full" placeholder="Descripción" rows={2} value={form.descripcion}
                           onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
                         <div className="flex gap-2 items-start flex-wrap mt-3">
-                          <button className="bg-black hover:bg-gray-800 px-4 py-1.5 rounded-md text-sm text-white" onClick={savePlat}>Guardar</button>
+                          <Button size="sm" onClick={savePlat}>Guardar</Button>
                           {editPlatId > 0 && (
-                            <label className="bg-white border border-gray-200 hover:bg-gray-100 px-3 py-1.5 rounded-md cursor-pointer text-sm flex items-center gap-2">
+                            <label className="bg-white border border-border hover:bg-secondary px-3 py-1.5 rounded-md cursor-pointer text-sm flex items-center gap-2">
                               Subir foto
                               <input type="file" accept="image/jpeg,image/png" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) uploadFoto(editPlatId, f) }} />
                             </label>
                           )}
                           {editPlatId > 0 && currentPlatillo?.foto_url && (
-                            <img src={currentPlatillo.foto_url} alt="" className="w-12 h-12 rounded-md object-cover border border-gray-200" />
+                            <img src={currentPlatillo.foto_url} alt="" className="w-12 h-12 rounded-md object-cover border border-border" />
                           )}
-                          <button className="text-gray-400 hover:text-black text-sm" onClick={cancelEditPlat}>Cancelar</button>
+                          <Button variant="ghost" size="sm" onClick={cancelEditPlat}>Cancelar</Button>
                         </div>
 
                         {editPlatId > 0 && (
-                          <div className="mt-4 pt-3 border-t border-gray-200">
+                          <div className="mt-4 pt-3 border-t border-border">
                             <h4 className="text-sm font-semibold mb-2">Modificadores</h4>
                             {mods.map(m => (
                               <div key={m.id} className="flex items-center gap-2 py-1 text-sm">
-                                <span className="text-gray-500">{m.nombre_grupo}:</span>
+                                <span className="text-muted-foreground">{m.nombre_grupo}:</span>
                                 <span>{m.nombre_opcion}</span>
-                                <span className="text-gray-500">${m.precio}</span>
-                                <span className="text-gray-400 text-xs">max {m.max_seleccion}</span>
-                                <button className="text-gray-400 hover:text-black ml-auto" onClick={() => editMod(m)}>Editar</button>
-                                <button className="text-red-500 hover:text-red-700" onClick={() => delMod(m.id)}>✕</button>
+                                <span className="text-muted-foreground">${m.precio}</span>
+                                <span className="text-muted-foreground/60 text-xs">max {m.max_seleccion}</span>
+                                <Button variant="ghost" size="xs" className="ml-auto" onClick={() => editMod(m)}>Editar</Button>
+                                <Button variant="ghost" size="xs" className="text-red-500 hover:text-red-700" onClick={() => delMod(m.id)}>✕</Button>
                               </div>
                             ))}
                             <div className="flex gap-2 mt-2 flex-wrap">
-                              <input className="bg-white border border-gray-200 rounded-md px-2 py-1 text-sm w-28" placeholder="Grupo" value={newMod.nombre_grupo}
+                              <input className="bg-white border border-border rounded-md px-2 py-1 text-sm w-28" placeholder="Grupo" value={newMod.nombre_grupo}
                                 onChange={e => setNewMod(m => ({ ...m, nombre_grupo: e.target.value }))} />
-                              <input className="bg-white border border-gray-200 rounded-md px-2 py-1 text-sm w-28" placeholder="Opción" value={newMod.nombre_opcion}
+                              <input className="bg-white border border-border rounded-md px-2 py-1 text-sm w-28" placeholder="Opción" value={newMod.nombre_opcion}
                                 onChange={e => setNewMod(m => ({ ...m, nombre_opcion: e.target.value }))} />
-                              <input className="bg-white border border-gray-200 rounded-md px-2 py-1 text-sm w-16" placeholder="$" type="number" value={newMod.precio}
+                              <input className="bg-white border border-border rounded-md px-2 py-1 text-sm w-16" placeholder="$" type="number" value={newMod.precio}
                                 onChange={e => setNewMod(m => ({ ...m, precio: e.target.value }))} />
-                              <input className="bg-white border border-gray-200 rounded-md px-2 py-1 text-sm w-14" placeholder="Max" type="number" value={newMod.max_seleccion}
+                              <input className="bg-white border border-border rounded-md px-2 py-1 text-sm w-14" placeholder="Max" type="number" value={newMod.max_seleccion}
                                 onChange={e => setNewMod(m => ({ ...m, max_seleccion: Number(e.target.value) }))} />
-                              <button className="bg-black hover:bg-gray-800 px-3 py-1 rounded-md text-sm text-white" onClick={saveMod}>{editModId ? 'Guardar' : '+'}</button>
-                              {editModId && <button className="text-gray-400 hover:text-black text-sm" onClick={() => { setNewMod({ ...emptyMod }); setEditModId(null) }}>Cancelar</button>}
+                              <Button size="sm" onClick={saveMod}>{editModId ? 'Guardar' : '+'}</Button>
+                              {editModId && <Button variant="ghost" size="sm" onClick={() => { setNewMod({ ...emptyMod }); setEditModId(null) }}>Cancelar</Button>}
                             </div>
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="px-4 py-3 border-b border-gray-100 hover:bg-white transition">
+                      <div className="px-4 py-3 border-b border-muted hover:bg-white transition">
                         <div className="flex items-center gap-3 text-sm">
-                          <span className={`flex-1 font-medium ${p.agotado ? 'line-through text-gray-400' : ''}`}>{p.nombre}</span>
+                          <span className={`flex-1 font-medium ${p.agotado ? 'line-through text-muted-foreground/60' : ''}`}>{p.nombre}</span>
                           <span className="font-semibold">${p.precio}</span>
                           {p.foto_url && <img src={p.foto_url} alt="" className="w-8 h-8 rounded object-cover" />}
-                          <button className="bg-black hover:bg-gray-800 px-3 py-1 rounded text-xs text-white" onClick={() => startEditPlat(p)}>Editar</button>
+                          <Button size="sm" className="text-xs px-3 py-1 h-auto" onClick={() => startEditPlat(p)}>Editar</Button>
                         </div>
                         <div className="flex gap-3 mt-1 ml-1">
-                          <button className="text-gray-400 hover:text-black text-xs" onClick={() => toggleAgotado(p)}>{p.agotado ? 'Disponible' : 'Agotado'}</button>
-                          <button className="text-gray-400 hover:text-black text-xs" onClick={() => duplicatePlat(p.id)}>Duplicar</button>
-                          <button className="text-red-400 hover:text-red-600 text-xs" onClick={() => delPlat(p.id)}>Eliminar</button>
+                          <Button variant="ghost" size="xs" onClick={() => toggleAgotado(p)}>{p.agotado ? 'Disponible' : 'Agotado'}</Button>
+                          <Button variant="ghost" size="xs" onClick={() => duplicatePlat(p.id)}>Duplicar</Button>
+                          <Button variant="ghost" size="xs" className="text-red-400 hover:text-red-600" onClick={() => delPlat(p.id)}>Eliminar</Button>
                         </div>
                       </div>
                     )}
@@ -370,27 +371,27 @@ export default function AdminMenu() {
 
                 <div className="p-3">
                   {editPlatId === -1 && editPlatId && form.categoria_id === c.id ? (
-                    <div className="p-3 border border-gray-200 rounded-md bg-white">
+                    <div className="p-3 border border-border rounded-md bg-white">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                        <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={form.nombre}
+                        <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Nombre" value={form.nombre}
                           onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
-                        <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Precio" type="number" step="0.01" value={form.precio}
+                        <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Precio" type="number" step="0.01" value={form.precio}
                           onChange={e => setForm(f => ({ ...f, precio: e.target.value }))} />
-                        <input className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm" placeholder="Tiempo prep. (min)" type="number" value={form.tiempo_preparacion}
+                        <input className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm" placeholder="Tiempo prep. (min)" type="number" value={form.tiempo_preparacion}
                           onChange={e => setForm(f => ({ ...f, tiempo_preparacion: Number(e.target.value) }))} />
                       </div>
-                      <textarea className="bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5 text-sm w-full" placeholder="Descripción" rows={2} value={form.descripcion}
+                      <textarea className="bg-muted border border-border rounded-md px-3 py-1.5 text-sm w-full" placeholder="Descripción" rows={2} value={form.descripcion}
                         onChange={e => setForm(f => ({ ...f, descripcion: e.target.value }))} />
                       <div className="flex gap-2 mt-2">
-                        <button className="bg-black hover:bg-gray-800 px-4 py-1.5 rounded-md text-sm text-white" onClick={savePlat}>Crear</button>
-                        <button className="text-gray-400 hover:text-black text-sm" onClick={() => { cancelEditPlat() }}>Cancelar</button>
+                        <Button size="sm" onClick={savePlat}>Crear</Button>
+                        <Button variant="ghost" size="sm" onClick={() => { cancelEditPlat() }}>Cancelar</Button>
                       </div>
                     </div>
                   ) : (
-                    <button className="w-full border-2 border-dashed border-gray-200 hover:border-black rounded-md py-2 text-sm text-gray-400 hover:text-black transition"
+                    <Button variant="outline" className="w-full border-2 border-dashed h-auto py-2 text-muted-foreground/60 hover:text-foreground"
                       onClick={() => { setForm({ nombre: '', descripcion: '', precio: '', categoria_id: c.id, tiempo_preparacion: 10 }); setMods([]); setEditPlatId(-1) }}>
                       + Nuevo platillo
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -401,7 +402,7 @@ export default function AdminMenu() {
       </div>
 
       {cats.length === 0 && !newCat && (
-        <p className="text-gray-400 text-center py-12">Crea tu primera categoría para empezar</p>
+        <p className="text-muted-foreground/60 text-center py-12">Crea tu primera categoría para empezar</p>
       )}
     </div>
   )

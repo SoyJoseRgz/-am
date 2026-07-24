@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '../components/ui/button'
 import { api, clearAppData } from '../services/api'
 
 export default function Super() {
@@ -80,82 +81,82 @@ export default function Super() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-black p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background text-foreground p-4 md:p-6 max-w-2xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Super Admin</h1>
-        <button onClick={() => { clearAppData(); navigate('/login') }} className="text-sm text-gray-400 hover:text-black">Cerrar sesión</button>
+        <Button variant="ghost" size="sm" onClick={() => { clearAppData(); navigate('/login') }} className="text-muted-foreground/60 hover:text-foreground">Cerrar sesión</Button>
       </div>
 
-      <button onClick={() => { setShowForm(!showForm); setResultado(null) }} className="bg-black text-white px-4 py-2 rounded-md text-sm">
+      <Button onClick={() => { setShowForm(!showForm); setResultado(null) }}>
         {showForm ? 'Cancelar' : 'Nuevo restaurante'}
-      </button>
+      </Button>
 
       {showForm && (
-        <form onSubmit={crear} className="bg-gray-50 border border-gray-200 rounded-md p-4 space-y-3">
+        <form onSubmit={crear} className="bg-muted border border-border rounded-md p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <input required placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" />
-            <input required placeholder="Slug (ej: mi-resto)" value={slug} onChange={e => setSlug(e.target.value.replace(/[^a-z0-9-]/g, '').toLowerCase())} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" />
+            <input required placeholder="Nombre" value={nombre} onChange={e => setNombre(e.target.value)} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" />
+            <input required placeholder="Slug (ej: mi-resto)" value={slug} onChange={e => setSlug(e.target.value.replace(/[^a-z0-9-]/g, '').toLowerCase())} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" />
           </div>
-          <input placeholder="Dirección" value={direccion} onChange={e => setDireccion(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" />
+          <input placeholder="Dirección" value={direccion} onChange={e => setDireccion(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" />
           <div className="grid grid-cols-2 gap-3">
-            <input required placeholder="Admin celular" value={adminCelular} onChange={e => setAdminCelular(e.target.value.replace(/\D/g, ''))} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" />
-            <input required placeholder="Admin nombre" value={adminNombre} onChange={e => setAdminNombre(e.target.value)} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" />
+            <input required placeholder="Admin celular" value={adminCelular} onChange={e => setAdminCelular(e.target.value.replace(/\D/g, ''))} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" />
+            <input required placeholder="Admin nombre" value={adminNombre} onChange={e => setAdminNombre(e.target.value)} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" />
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
-          <button disabled={submitting} className="w-full bg-black hover:bg-gray-800 disabled:bg-gray-100 disabled:text-gray-400 text-white py-2 rounded-md text-sm">
+          <Button type="submit" disabled={submitting} className="w-full">
             {submitting ? 'Creando...' : 'Crear restaurante'}
-          </button>
+          </Button>
           {resultado && (
             <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm space-y-1">
               <p className="text-green-700 font-medium">✓ Restaurante creado</p>
               <p>Admin: <strong>{resultado.admin.nombre}</strong> ({resultado.admin.celular})</p>
               <p>Contraseña temporal: <strong className="font-mono">{resultado.tempPassword}</strong></p>
-              <p className="text-gray-500 text-xs">El admin debe cambiarla al primer login</p>
-              <button onClick={() => {
+              <p className="text-muted-foreground text-xs">El admin debe cambiarla al primer login</p>
+              <Button variant="outline" size="xs" onClick={() => {
                 const txt = `Restaurante: ${resultado.restaurante.nombre}\nAdmin: ${resultado.admin.nombre}\nCelular: ${resultado.admin.celular}\nContraseña: ${resultado.tempPassword}`
                 navigator.clipboard.writeText(txt)
-              }} className="text-xs border border-green-300 text-green-700 rounded px-2 py-1 hover:bg-green-100 mt-1">
+              }} className="text-green-700 border-green-300 hover:bg-green-100 mt-1">
                 Copiar credenciales
-              </button>
+              </Button>
             </div>
           )}
         </form>
       )}
 
       <div className="space-y-2">
-        <p className="text-sm text-gray-500">{restaurantes.length} restaurante{restaurantes.length !== 1 ? 's' : ''}</p>
+        <p className="text-sm text-muted-foreground">{restaurantes.length} restaurante{restaurantes.length !== 1 ? 's' : ''}</p>
         {restaurantes.map(r => (
           editId === r.id ? (
-            <div key={r.id} className="bg-gray-50 border border-gray-200 rounded-md p-3 space-y-2">
-              <input value={editNombre} onChange={e => setEditNombre(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" placeholder="Nombre" />
+            <div key={r.id} className="bg-muted border border-border rounded-md p-3 space-y-2">
+              <input value={editNombre} onChange={e => setEditNombre(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" placeholder="Nombre" />
               <div className="grid grid-cols-2 gap-2">
-                <input value={editSlug} onChange={e => setEditSlug(e.target.value)} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" placeholder="Slug" />
-                <input value={editTelefono} onChange={e => setEditTelefono(e.target.value)} className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" placeholder="Teléfono" />
+                <input value={editSlug} onChange={e => setEditSlug(e.target.value)} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" placeholder="Slug" />
+                <input value={editTelefono} onChange={e => setEditTelefono(e.target.value)} className="border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" placeholder="Teléfono" />
               </div>
-              <input value={editDireccion} onChange={e => setEditDireccion(e.target.value)} className="w-full border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:border-gray-400" placeholder="Dirección" />
+              <input value={editDireccion} onChange={e => setEditDireccion(e.target.value)} className="w-full border border-border rounded-md px-3 py-2 text-sm outline-none focus:border-muted-foreground" placeholder="Dirección" />
               <div className="flex gap-2">
-                <button onClick={saveEdit} className="bg-black text-white px-3 py-1.5 rounded-md text-sm">Guardar</button>
-                <button onClick={() => setEditId(null)} className="text-gray-500 px-3 py-1.5 text-sm">Cancelar</button>
+                <Button size="sm" onClick={saveEdit}>Guardar</Button>
+                <Button variant="ghost" size="sm" onClick={() => setEditId(null)}>Cancelar</Button>
               </div>
             </div>
           ) : (
-            <div key={r.id} className="bg-white border border-gray-200 rounded-md p-3 flex items-center justify-between">
+            <div key={r.id} className="bg-white border border-border rounded-md p-3 flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-sm">{r.nombre}</p>
-                <p className="text-xs text-gray-400 truncate">{r.slug} · {r.direccion || 'Sin dirección'}</p>
+                <p className="text-xs text-muted-foreground/60 truncate">{r.slug} · {r.direccion || 'Sin dirección'}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-2">
-                <span className={`text-xs px-2 py-0.5 rounded-full ${r.activo ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${r.activo ? 'bg-green-100 text-green-700' : 'bg-secondary text-muted-foreground'}`}>
                   {r.activo ? 'Activo' : 'Inactivo'}
                 </span>
-                <button onClick={() => startEdit(r)} className="text-xs text-gray-500 hover:text-black border border-gray-200 rounded px-2 py-0.5">Editar</button>
+                <Button variant="outline" size="xs" onClick={() => startEdit(r)}>Editar</Button>
                 {deletingId === r.id ? (
                   <div className="flex gap-1">
-                    <button onClick={() => deleteRestaurante(r.id)} className="text-xs text-red-600 border border-red-200 rounded px-2 py-0.5">Confirmar</button>
-                    <button onClick={() => setDeletingId(null)} className="text-xs text-gray-400 border border-gray-200 rounded px-2 py-0.5">No</button>
+                    <Button variant="outline" size="xs" className="text-red-600 border-red-200" onClick={() => deleteRestaurante(r.id)}>Confirmar</Button>
+                    <Button variant="outline" size="xs" onClick={() => setDeletingId(null)}>No</Button>
                   </div>
                 ) : (
-                  <button onClick={() => setDeletingId(r.id)} className="text-xs text-red-500 hover:text-red-700 border border-red-200 rounded px-2 py-0.5">Eliminar</button>
+                  <Button variant="outline" size="xs" className="text-red-500 hover:text-red-700 border-red-200" onClick={() => setDeletingId(r.id)}>Eliminar</Button>
                 )}
               </div>
             </div>

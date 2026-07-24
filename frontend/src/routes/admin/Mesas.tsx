@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button } from '../../components/ui/button'
 import { api, getCurrentUser } from '../../services/api'
 import { socket } from '../../services/socket'
 
@@ -69,23 +70,21 @@ export default function AdminMesas() {
       <h2 className="text-2xl font-bold mb-4">Mesas</h2>
 
       <div className="flex gap-2 mb-6">
-        <input className="bg-gray-50 border border-gray-200 rounded-md px-4 py-2 w-32" placeholder="Número" type="number" value={numero} onChange={e => setNumero(e.target.value)} />
-        <button className="bg-black hover:bg-gray-800 px-6 py-2 rounded-md font-medium text-white" onClick={save}>
-          {editId ? 'Actualizar' : 'Agregar'}
-        </button>
-        {editId && <button className="text-gray-400 hover:text-black px-4" onClick={() => { setNumero(''); setEditId(null) }}>Cancelar</button>}
+        <input className="bg-muted border border-border rounded-md px-4 py-2 w-32" placeholder="Número" type="number" value={numero} onChange={e => setNumero(e.target.value)} />
+        <Button onClick={save}>{editId ? 'Actualizar' : 'Agregar'}</Button>
+        {editId && <Button variant="ghost" onClick={() => { setNumero(''); setEditId(null) }}>Cancelar</Button>}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {mesas.map(m => (
-          <div key={m.id} className="bg-white border border-gray-200 rounded-md p-4 flex flex-col items-center gap-2">
+          <div key={m.id} className="bg-white border border-border rounded-md p-4 flex flex-col items-center gap-2">
             <span className="text-3xl">{estados[m.estado] || '⚪'}</span>
             <span className="text-lg font-bold">Mesa {m.numero}</span>
-            <span className="text-xs text-gray-400 capitalize">{m.estado}</span>
+            <span className="text-xs text-muted-foreground/60 capitalize">{m.estado}</span>
             <div className="flex gap-2 mt-1">
-              <button className="text-black hover:text-gray-600 text-sm" onClick={() => { setEditId(m.id); setNumero(String(m.numero)) }}>Editar</button>
-              <button className="text-gray-400 text-sm hover:text-black" onClick={() => downloadQR(m.id, m.numero)}>QR</button>
-              <button className="text-red-500 text-sm hover:text-red-700" onClick={() => del(m.id)}>✕</button>
+              <Button variant="ghost" size="xs" onClick={() => { setEditId(m.id); setNumero(String(m.numero)) }}>Editar</Button>
+              <Button variant="ghost" size="xs" onClick={() => downloadQR(m.id, m.numero)}>QR</Button>
+              <Button variant="ghost" size="xs" className="text-red-500 hover:text-red-700" onClick={() => del(m.id)}>✕</Button>
             </div>
           </div>
         ))}

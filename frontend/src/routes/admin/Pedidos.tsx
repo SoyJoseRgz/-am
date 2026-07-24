@@ -41,28 +41,28 @@ export default function AdminPedidos() {
   const totalCompletados = pedidos.reduce((s, p) => s + p.items.filter(i => i.estado === 'entregado').length, 0)
   const totalActivos = pedidos.reduce((s, p) => s + p.items.filter(i => !['entregado', 'cancelado'].includes(i.estado)).length, 0)
 
-  if (loading) return <div className="text-gray-500 text-center py-12">Cargando pedidos...</div>
+  if (loading) return <div className="text-muted-foreground text-center py-12">Cargando pedidos...</div>
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <h2 className="text-xl font-bold">Pedidos</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-border rounded-md p-4">
           <p className="text-2xl font-bold">{pedidos.length}</p>
-          <p className="text-xs text-gray-500">Pedidos totales</p>
+          <p className="text-xs text-muted-foreground">Pedidos totales</p>
         </div>
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-border rounded-md p-4">
           <p className="text-2xl font-bold">{totalActivos}</p>
-          <p className="text-xs text-gray-500">Items activos</p>
+          <p className="text-xs text-muted-foreground">Items activos</p>
         </div>
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-border rounded-md p-4">
           <p className="text-2xl font-bold text-green-600">{totalCompletados}</p>
-          <p className="text-xs text-gray-500">Items completados</p>
+          <p className="text-xs text-muted-foreground">Items completados</p>
         </div>
-        <div className="border border-gray-200 rounded-md p-4">
+        <div className="border border-border rounded-md p-4">
           <p className="text-2xl font-bold text-red-500">{totalCancelados}</p>
-          <p className="text-xs text-gray-500">Items cancelados</p>
+          <p className="text-xs text-muted-foreground">Items cancelados</p>
         </div>
       </div>
 
@@ -70,14 +70,14 @@ export default function AdminPedidos() {
         {pedidos.map(ped => {
           const cancelados = ped.items.filter(i => i.estado === 'cancelado')
           return (
-            <div key={ped.id} className="border border-gray-200 rounded-md p-4">
+            <div key={ped.id} className="border border-border rounded-md p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className="font-semibold">Mesa {ped.mesa_numero}</span>
-                  <span className="text-xs text-gray-400">#{ped.id}</span>
-                  {ped.comensal_nombre && <span className="text-xs text-gray-500">{ped.comensal_nombre}</span>}
+                  <span className="text-xs text-muted-foreground/60">#{ped.id}</span>
+                  {ped.comensal_nombre && <span className="text-xs text-muted-foreground">{ped.comensal_nombre}</span>}
                 </div>
-                <span className="text-xs text-gray-400">{new Date(ped.created_at).toLocaleString('es-MX')}</span>
+                <span className="text-xs text-muted-foreground/60">{new Date(ped.created_at).toLocaleString('es-MX')}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {ped.items.map(item => (
@@ -88,7 +88,7 @@ export default function AdminPedidos() {
                         ? 'border-red-200 text-red-400 line-through bg-red-50'
                         : item.estado === 'entregado'
                         ? 'border-green-200 text-green-600 bg-green-50'
-                        : 'border-gray-200 text-gray-600'
+                        : 'border-border text-muted-foreground/80'
                     }`}
                   >
                     {item.cantidad}x {item.nombre}
@@ -113,7 +113,7 @@ export default function AdminPedidos() {
             </div>
           )
         })}
-        {pedidos.length === 0 && <p className="text-gray-400 text-center py-8">No hay pedidos aún</p>}
+        {pedidos.length === 0 && <p className="text-muted-foreground/60 text-center py-8">No hay pedidos aún</p>}
       </div>
     </div>
   )
